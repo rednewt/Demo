@@ -1,12 +1,13 @@
 #include "pch.h"
 #include "Timer.h"
+#include "DemoScene.h"
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 bool InitializeWindow(HINSTANCE hInstance, HWND& outWindowHandle);
 
-const int g_ClientWidth = 1600;
-const int g_ClientHeight = 900;
+const int g_ClientWidth = 1280;
+const int g_ClientHeight = 600;
 
 INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -25,6 +26,21 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
+	if (!DirectX::XMVerifyCPUSupport())
+	{
+		MessageBox(NULL, L"DirectXMath not supported", 0, MB_OK | MB_ICONERROR);
+		return -1;
+	}
+
+	std::unique_ptr<DemoBase> scene = std::make_unique<DemoScene>(windowHandle, g_ClientWidth, g_ClientHeight);
+	Timer sceneTimer;
+
+	if (!scene->Initialize())
+	{
+		MessageBox(NULL, L"Failed to initialize scene", 0, MB_OK | MB_ICONERROR);
+		return -1;
+	}
+
 	ShowWindow(windowHandle, nShowCmd);
 	UpdateWindow(windowHandle);
 
@@ -39,7 +55,10 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 		}
 		else
 		{
-			
+			sceneTimer.Tick();
+
+			scene->UpdateScene(sceneTimer.GetDeltaTime());
+			scene->DrawScene();
 		}
 	}
 
