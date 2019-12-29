@@ -29,9 +29,10 @@ public:
 	virtual ~DemoBase();
 
 	virtual bool Initialize();
-	void OnResize();
+	virtual void OnResize();
 
 	virtual void UpdateScene(float dt) = 0;
 	virtual void DrawScene() = 0;
+
 
 };
