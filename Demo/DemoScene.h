@@ -5,7 +5,7 @@
 class DemoScene : public DemoBase
 {
 public:
-	DemoScene(const HWND& hwnd, UINT ClientWidth, UINT ClientHeight);
+	DemoScene(const HWND& hwnd);
 	~DemoScene();
 
 	void UpdateScene(float dt) override;

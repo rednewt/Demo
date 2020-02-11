@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "DemoScene.h"
 
-DemoScene::DemoScene(const HWND& hwnd, UINT ClientWidth, UINT ClientHeight) :
-	DemoBase(hwnd, ClientWidth, ClientHeight)
+DemoScene::DemoScene(const HWND& hwnd) :
+	DemoBase(hwnd)
 {
 	
 }

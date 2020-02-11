@@ -4,17 +4,17 @@
 using namespace Microsoft::WRL;
 
 
-DemoBase::DemoBase(const HWND& hwnd, UINT ClientWidth, UINT ClientHeight) :
-	m_MainWindow(hwnd), m_ClientWidth(ClientWidth), m_ClientHeight(ClientHeight),
+DemoBase::DemoBase(const HWND& hwnd) :
+	m_MainWindow(hwnd), 
 	m_MSAAQuality(0)
 {
 	m_ScreenViewport = { };
 
-	if (m_ClientWidth < MINIMUM_CLIENT_WIDTH || m_ClientHeight < MINIMUM_CLIENT_HEIGHT)
-	{
-		m_ClientWidth = MINIMUM_CLIENT_WIDTH;
-		m_ClientHeight = MINIMUM_CLIENT_HEIGHT;
-	}
+	RECT rect;
+	GetClientRect(hwnd, &rect);
+	
+	m_ClientWidth = rect.right - rect.left;
+	m_ClientHeight = rect.bottom - rect.top;
 }
 
 DemoBase::~DemoBase()

@@ -7,7 +7,7 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 bool InitializeWindow(HINSTANCE hInstance, HWND& outWindowHandle);
 
 const int g_ClientWidth = 1280;
-const int g_ClientHeight = 600;
+const int g_ClientHeight = 720;
 
 INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -32,7 +32,7 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	std::unique_ptr<DemoBase> scene = std::make_unique<DemoScene>(windowHandle, g_ClientWidth, g_ClientHeight);
+	std::unique_ptr<DemoBase> scene = std::make_unique<DemoScene>(windowHandle);
 	Timer sceneTimer;
 
 	if (!scene->Initialize())

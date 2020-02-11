@@ -3,8 +3,6 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 
-#define MINIMUM_CLIENT_WIDTH 800
-#define MINIMUM_CLIENT_HEIGHT 600
 
 class DemoBase
 {
@@ -25,7 +23,7 @@ protected:
 	UINT m_ClientHeight;
 	UINT m_MSAAQuality;
 public:
-	DemoBase(const HWND& hwnd, UINT ClientWidth, UINT ClientHeight);
+	DemoBase(const HWND& hwnd);
 	virtual ~DemoBase();
 
 	virtual bool Initialize();
