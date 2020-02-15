@@ -3,6 +3,8 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 
+//use constructor for initializing variables
+//use Initialize() for creating resources
 
 class DemoBase
 {

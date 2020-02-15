@@ -6,8 +6,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 bool InitializeWindow(HINSTANCE hInstance, HWND& outWindowHandle);
 
-const int g_ClientWidth = 1280;
-const int g_ClientHeight = 720;
+constexpr auto g_ClientWidth = 1280;
+constexpr auto g_ClientHeight = 720;
 
 INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
