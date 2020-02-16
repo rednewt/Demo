@@ -17,33 +17,29 @@ bool DemoScene::Initialize()
 {
 	if (!DemoBase::Initialize())
 		return false;
-
-	if FAILED(m_Device->CreateInputLayout(m_SimpleVertexDesc, ARRAYSIZE(m_SimpleVertexDesc), simple_vs, sizeof(simple_vs), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
+	
+	if FAILED(m_Device->CreateInputLayout(m_SimpleVertexDesc, ARRAYSIZE(m_SimpleVertexDesc), g_byteArraySimpleVS, sizeof(g_byteArraySimpleVS), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
 		return false;
 
-	if FAILED(m_Device->CreateVertexShader(simple_vs, sizeof(simple_vs), nullptr, m_SimpleVertexShader.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreateVertexShader(g_byteArraySimpleVS, sizeof(g_byteArraySimpleVS), nullptr, m_SimpleVertexShader.ReleaseAndGetAddressOf()))
 		return false;
 
-	if FAILED(m_Device->CreatePixelShader(simple_ps, sizeof(simple_ps), nullptr, m_SimplePixelShader.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreatePixelShader(g_byteArraySimplePS, sizeof(g_byteArraySimplePS), nullptr, m_SimplePixelShader.ReleaseAndGetAddressOf()))
 		return false;
 
 	SimpleVertex vertices[3] =
 	{
-		{ XMFLOAT3(0.0f, 0.5f, 0.5f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
-		{ XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
-		{ XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) }
+		{ XMFLOAT3(0.0f, 0.8f, 0.0f), XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(0.5f, -0.5f, 0.0f), XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f) },
+		{ XMFLOAT3(-0.5f, -0.5f, 0.0f), XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f) }
 	};
 
-	D3D11_BUFFER_DESC vbDesc;
-	ZeroMemory(&vbDesc, sizeof(vbDesc));
-
+	D3D11_BUFFER_DESC vbDesc = {};
 	vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	vbDesc.ByteWidth = sizeof(SimpleVertex) * ARRAYSIZE(vertices);
 	vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
-	D3D11_SUBRESOURCE_DATA vbData;
-	ZeroMemory(&vbData, sizeof(vbData));
-
+	D3D11_SUBRESOURCE_DATA vbData = {};
 	vbData.pSysMem = vertices;
 
 	if FAILED(m_Device->CreateBuffer(&vbDesc, &vbData, m_SimpleVertexBuffer.ReleaseAndGetAddressOf()))

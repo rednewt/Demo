@@ -8,6 +8,8 @@ DemoBase::DemoBase(const HWND& hwnd) :
 	m_MainWindow(hwnd), 
 	m_MSAAQuality(0)
 {
+	assert(m_MainWindow != nullptr);
+
 	m_ScreenViewport = { };
 
 	RECT rect;
@@ -23,8 +25,6 @@ DemoBase::~DemoBase()
 
 bool DemoBase::Initialize()
 {
-	if (!m_MainWindow)
-		return false;
 
 	UINT flags = 0;
 
