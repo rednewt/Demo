@@ -123,8 +123,8 @@ void DemoBase::OnResize()
 	DX::ThrowIfFailed(m_Device->CreateTexture2D(&depthStencilDesc, 0, m_DepthStencilBuffer.ReleaseAndGetAddressOf()));
 	DX::ThrowIfFailed(m_Device->CreateDepthStencilView(m_DepthStencilBuffer.Get(), 0, m_DepthStencilView.ReleaseAndGetAddressOf()));
 
-	ID3D11RenderTargetView* views[] = { m_RenderTargetView.Get() };
-	m_ImmediateContext->OMSetRenderTargets(1, views, m_DepthStencilView.Get());
+	
+	m_ImmediateContext->OMSetRenderTargets(1, m_RenderTargetView.GetAddressOf(), m_DepthStencilView.Get());
 
 	m_ScreenViewport.TopLeftX = 0.0f;
 	m_ScreenViewport.TopLeftY = 0.0f;
