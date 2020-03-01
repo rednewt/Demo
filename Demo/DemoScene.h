@@ -11,14 +11,27 @@ namespace VertexStructure
 	};
 }
 
+namespace VSConstantBuffers
+{
+	struct SimpleConstantBuffer
+	{
+		DirectX::XMFLOAT4X4 WorldViewProj;
+	};
+}
+
+
 class DemoScene : public DemoBase
 {
 private:
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> m_SimpleVertexShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_SimplePixelShader;
-	
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_SimpleVertexLayout;
+
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_SimpleVertexBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_SimpleIndexBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_SimpleConstantBuffer;
+
+	VSConstantBuffers::SimpleConstantBuffer m_SimpleCBData;
 
 	D3D11_INPUT_ELEMENT_DESC m_SimpleVertexDesc[2];
 

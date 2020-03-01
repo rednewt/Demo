@@ -77,15 +77,19 @@ bool DemoBase::Initialize()
 	sd.Flags = 0;
 
 	ComPtr<IDXGIDevice> dxgiDevice;
-	DX::ThrowIfFailed(m_Device.As(&dxgiDevice));
+	if FAILED(m_Device.As(&dxgiDevice))
+		return false;
 
 	ComPtr<IDXGIAdapter> dxgiAdapter;
-	DX::ThrowIfFailed(dxgiDevice->GetAdapter(dxgiAdapter.GetAddressOf()));
+	if FAILED(dxgiDevice->GetAdapter(dxgiAdapter.GetAddressOf()))
+		return false;
 
 	ComPtr<IDXGIFactory1> dxgiFactory;
-	DX::ThrowIfFailed(dxgiAdapter->GetParent(__uuidof(IDXGIFactory1), &dxgiFactory));
+	if FAILED(dxgiAdapter->GetParent(__uuidof(IDXGIFactory1), &dxgiFactory))
+		return false;
 
-	DX::ThrowIfFailed(dxgiFactory->CreateSwapChain(m_Device.Get(), &sd, m_SwapChain.ReleaseAndGetAddressOf()));
+	if FAILED(dxgiFactory->CreateSwapChain(m_Device.Get(), &sd, m_SwapChain.ReleaseAndGetAddressOf()))
+		return false;
 	
 	dxgiDevice.Reset();
 	dxgiAdapter.Reset();

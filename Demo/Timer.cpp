@@ -10,6 +10,7 @@ Timer::Timer() :
 	
 	m_SecondsPerCount = 1.0 / (double)countsPerSecond;
 
+	Reset();
 }
 
 void Timer::Reset()

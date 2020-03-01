@@ -1,6 +1,6 @@
 cbuffer cbPerObject
 {
-    float4x4 WorldViewProj;
+    row_major float4x4 WorldViewProj;
 };
 
 struct VertexIn
@@ -19,8 +19,8 @@ VertexOut main( VertexIn vin )
 {
     VertexOut vout;
 
-   // vout.PosH = mul(float4(vin.PosL, 1.0f), WorldViewProj);
-    vout.PosH = float4(vin.PosL, 1.0f);
+    vout.PosH = mul(float4(vin.PosL, 1.0f), WorldViewProj);
+    //vout.PosH = float4(vin.PosL, 1.0f);
     vout.Color = vin.Color;
     
     return vout;
