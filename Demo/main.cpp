@@ -32,7 +32,14 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 		return -1;
 	}
 
-	std::unique_ptr<DemoBase> scene = std::make_unique<DemoScene>(windowHandle);
+	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, L"CoInitializeEx failed", 0, MB_OK | MB_ICONERROR);
+		return -1;
+	}
+
+	std::unique_ptr<DemoScene> scene = std::make_unique<DemoScene>(windowHandle);
 	Timer sceneTimer;
 
 	if (!scene->Initialize())
