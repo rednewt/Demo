@@ -8,19 +8,15 @@ DemoBase::DemoBase(const HWND& hwnd) :
 	m_MainWindow(hwnd), 
 	m_MSAAQuality(0)
 {
-	assert(m_MainWindow != nullptr);
+	assert(hwnd != nullptr);
 
 	m_ScreenViewport = { };
-
+	
 	RECT rect;
 	GetClientRect(hwnd, &rect);
 	
 	m_ClientWidth = rect.right - rect.left;
 	m_ClientHeight = rect.bottom - rect.top;
-}
-
-DemoBase::~DemoBase()
-{
 }
 
 bool DemoBase::Initialize()

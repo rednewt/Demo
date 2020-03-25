@@ -1,12 +1,14 @@
 
+
 struct VertexOut
 {
     float4 PosH : SV_POSITION;
+    float3 NormalW : NORMAL0;
     float2 Tex : TEXCOORD0;
 };
 
 SamplerState SamState : register(s0);
-Texture2D DiffuseMap : register(t0);
+Texture2D DiffuseMap : register(t0); 
 
 float4 main(VertexOut pin) : SV_TARGET
 {

@@ -26,7 +26,7 @@ protected:
 	UINT m_MSAAQuality;
 public:
 	DemoBase(const HWND& hwnd);
-	virtual ~DemoBase();
+	virtual ~DemoBase() = default;
 
 	virtual bool Initialize();
 	virtual void OnResize();
