@@ -33,8 +33,8 @@ float4 main(VertexOut pin) : SV_TARGET
     float3 LightVector = -gLight.Direction;
     float Intensity = max(dot(LightVector, pin.NormalW), 0.0f);
     
-   // float4 Ambient = 0.3f * SampleColor;
+    float4 Ambient = 0.3f * SampleColor;
     float4 Diffuse = Intensity * SampleColor;
     
-    return Diffuse;
+    return Diffuse + Ambient;
 }
