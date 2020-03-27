@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClInclude Include="DemoBase.h" />
     <ClInclude Include="DemoScene.h" />
+    <ClInclude Include="Helpers.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Vertex.h" />
