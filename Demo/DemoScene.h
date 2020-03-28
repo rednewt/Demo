@@ -2,6 +2,7 @@
 
 #include "DemoBase.h"
 
+
 namespace
 {
 	struct VS_ConstantBufferPerObject
@@ -15,6 +16,18 @@ namespace
 	{
 		DirectX::XMFLOAT3 Direction;
 		float padding;
+
+		void SetDirection(DirectX::FXMVECTOR direction)
+		{
+			DirectX::XMVECTOR v = DirectX::XMVector3Normalize(direction);
+			DirectX::XMStoreFloat3(&Direction, v);
+		}
+
+		void SetDirection(const DirectX::XMFLOAT3& direction)
+		{
+			DirectX::XMVECTOR v = DirectX::XMLoadFloat3(&direction);
+			SetDirection(v);
+		}
 	};
 
 	struct PS_ConstantBufferPerFrame
@@ -96,6 +109,7 @@ private:
 	PS_ConstantBufferPerFrame m_CBPerFrameData;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_SRVCube;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_SRVCylinder;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerDefault;
 

@@ -9,6 +9,7 @@ bool InitializeWindow(HINSTANCE hInstance, HWND& outWindowHandle);
 constexpr auto g_ClientWidth = 1280;
 constexpr auto g_ClientHeight = 720;
 
+
 INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR lpCmdLine,
@@ -19,23 +20,23 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
+	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
+	if (FAILED(hr))
+	{
+		MessageBox(NULL, L"CoInitializeEx failed", 0, MB_OK | MB_ICONERROR);
+		return -1;
+	}
+
 	HWND windowHandle;
 	if (!InitializeWindow(hInstance, windowHandle))
 	{
 		MessageBox(NULL, L"Failed to create a window", 0, MB_OK | MB_ICONERROR);
 		return -1;
 	}
-
+	
 	if (!DirectX::XMVerifyCPUSupport())
 	{
 		MessageBox(NULL, L"DirectXMath not supported", 0, MB_OK | MB_ICONERROR);
-		return -1;
-	}
-
-	HRESULT hr = CoInitializeEx(nullptr, COINITBASE_MULTITHREADED);
-	if (FAILED(hr))
-	{
-		MessageBox(NULL, L"CoInitializeEx failed", 0, MB_OK | MB_ICONERROR);
 		return -1;
 	}
 
@@ -69,6 +70,8 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 		}
 	}
 
+	CoUninitialize();
+
 	return static_cast<int>(msg.wParam);
 }
 
@@ -81,6 +84,7 @@ bool InitializeWindow(HINSTANCE hInstance, HWND& windowHandle)
 	wc.hInstance = hInstance;
 	wc.lpszClassName = WindowClass.c_str();
 	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW); 
 	wc.lpfnWndProc = WindowProc;
 
 	if (!RegisterClass(&wc))

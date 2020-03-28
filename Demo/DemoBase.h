@@ -24,6 +24,10 @@ protected:
 	UINT m_ClientWidth;
 	UINT m_ClientHeight;
 	UINT m_MSAAQuality;
+	UINT M_MSAASampleCount;
+
+	DXGI_FORMAT m_BackBufferFormat;
+	DXGI_FORMAT m_DepthStencilBufferFormat;
 public:
 	DemoBase(const HWND& hwnd);
 	virtual ~DemoBase() = default;

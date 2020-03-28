@@ -6,10 +6,13 @@ using namespace Microsoft::WRL;
 
 DemoBase::DemoBase(const HWND& hwnd) :
 	m_MainWindow(hwnd), 
-	m_MSAAQuality(0)
+	m_MSAAQuality(0),
+	M_MSAASampleCount(4),
+	m_BackBufferFormat(DXGI_FORMAT_R8G8B8A8_UNORM),
+	m_DepthStencilBufferFormat(DXGI_FORMAT_D24_UNORM_S8_UINT)
 {
 	assert(hwnd != nullptr);
-
+	 
 	m_ScreenViewport = { };
 	
 	RECT rect;
@@ -48,21 +51,21 @@ bool DemoBase::Initialize()
 		return false;
 
 	DXGI_SWAP_CHAIN_DESC sd;
-
+	
 	sd.BufferDesc.Width = m_ClientWidth;
 	sd.BufferDesc.Height = m_ClientHeight;
 	sd.BufferDesc.RefreshRate.Numerator = 60;
 	sd.BufferDesc.RefreshRate.Denominator= 1;
-	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	sd.BufferDesc.Format = m_BackBufferFormat;
 	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 
-	//Use 4x MSAA
-	DX::ThrowIfFailed(m_Device->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM, 4, &m_MSAAQuality));
+	//Use MSAA
+	DX::ThrowIfFailed(m_Device->CheckMultisampleQualityLevels(m_BackBufferFormat, M_MSAASampleCount, &m_MSAAQuality));
 
 	assert(m_MSAAQuality > 0);
 
-	sd.SampleDesc.Count = 4;
+	sd.SampleDesc.Count = M_MSAASampleCount;
 	sd.SampleDesc.Quality = m_MSAAQuality - 1;
 
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -98,7 +101,7 @@ bool DemoBase::Initialize()
 
 void DemoBase::OnResize()
 {
-	DX::ThrowIfFailed(m_SwapChain->ResizeBuffers(1, m_ClientWidth, m_ClientHeight, DXGI_FORMAT_R8G8B8A8_UNORM, 0));
+	DX::ThrowIfFailed(m_SwapChain->ResizeBuffers(1, m_ClientWidth, m_ClientHeight, m_BackBufferFormat, 0));
 	
 	ComPtr<ID3D11Texture2D> backBuffer;
 	DX::ThrowIfFailed(m_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(backBuffer.GetAddressOf())));
@@ -112,8 +115,8 @@ void DemoBase::OnResize()
 	depthStencilDesc.MipLevels = 1;
 	depthStencilDesc.Width = m_ClientWidth;
 	depthStencilDesc.Height = m_ClientHeight;
-	depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilDesc.SampleDesc.Count = 4;
+	depthStencilDesc.Format = m_DepthStencilBufferFormat;
+	depthStencilDesc.SampleDesc.Count = M_MSAASampleCount;
 	depthStencilDesc.SampleDesc.Quality = m_MSAAQuality - 1;
 	depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
 	depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
