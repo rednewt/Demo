@@ -51,8 +51,8 @@ struct Drawable
 	void Create(ID3D11Device* const device, const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices)
 	{
 		assert(device != nullptr);
-		IndexCount = indices.size();
-		VertexCount = vertices.size();
+		IndexCount = static_cast<uint32_t>(indices.size());
+		VertexCount = static_cast<uint32_t>(vertices.size());
 	
 		if (sizeof(IndexType) == 4)
 			IndexBufferFormat = DXGI_FORMAT_R32_UINT;
@@ -61,7 +61,7 @@ struct Drawable
 
 		D3D11_BUFFER_DESC vbDesc = {};
 		vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		vbDesc.ByteWidth = sizeof(VertexType) * vertices.size();
+		vbDesc.ByteWidth = sizeof(VertexType) * VertexCount;
 		vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 
 		D3D11_SUBRESOURCE_DATA vbData = {};
@@ -71,7 +71,7 @@ struct Drawable
 
 		D3D11_BUFFER_DESC ibDesc = {};
 		ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		ibDesc.ByteWidth = sizeof(IndexType) * indices.size();
+		ibDesc.ByteWidth = sizeof(IndexType) * IndexCount;
 		ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 
 		D3D11_SUBRESOURCE_DATA ibData = {};

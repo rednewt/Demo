@@ -1,10 +1,10 @@
 #include "pch.h"
 #include "DemoScene.h"
-#include "Shaders/simpleVS.h"
-#include "Shaders/simplePS.h"
 #include <DDSTextureLoader.h>
 #include <WICTextureLoader.h>
 #include <GeometricPrimitive.h>
+#include "Shaders\Compiled\BasicShaderPS.h"
+#include "Shaders\Compiled\BasicShaderVS.h"
 
 
 using namespace DirectX;
@@ -21,13 +21,13 @@ DemoScene::DemoScene(const HWND& hwnd) :
 
 bool DemoScene::CreateDeviceDependentResources()
 {
-	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount, g_byteArraySimpleVS, sizeof(g_byteArraySimpleVS), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount, g_VSBasicShader, sizeof(g_VSBasicShader), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
 		return false;
 
-	if FAILED(m_Device->CreateVertexShader(g_byteArraySimpleVS, sizeof(g_byteArraySimpleVS), nullptr, m_SimpleVertexShader.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreateVertexShader(g_VSBasicShader, sizeof(g_VSBasicShader), nullptr, m_SimpleVertexShader.ReleaseAndGetAddressOf()))
 		return false;
 
-	if FAILED(m_Device->CreatePixelShader(g_byteArraySimplePS, sizeof(g_byteArraySimplePS), nullptr, m_SimplePixelShader.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreatePixelShader(g_PSBasicShader, sizeof(g_PSBasicShader), nullptr, m_SimplePixelShader.ReleaseAndGetAddressOf()))
 		return false;
 
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\crate.dds", 0, m_SRVCube.ReleaseAndGetAddressOf()))
