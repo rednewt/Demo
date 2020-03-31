@@ -1,40 +1,24 @@
+#include "Common.fx"
 
+//register b0 is already used by common cbPerObject
 
-struct VertexOut
-{
-    float4 PosH : SV_POSITION;
-    float3 PosW : WORLD_POS;
-    float3 NormalW : NORMAL0;
-    float2 Tex : TEXCOORD0;
-};
-
-
-struct DirectionalLight
-{
-    float3 Direction;
-    float pad;
-};
-
-cbuffer cbPerFrame : register(b0)
+cbuffer cbPerFrame : register(b1)
 {
     DirectionalLight gLight;
 };
+
 
 SamplerState SamState : register(s0);
 Texture2D DiffuseMap : register(t0); 
 
 float4 main(VertexOut pin) : SV_TARGET
 {
-    float4 SampleColor = DiffuseMap.Sample(SamState, pin.Tex);
-    
     pin.NormalW = normalize(pin.NormalW);
     
-    //Expects Direction Vector to be normalized 
-    float3 LightVector = -gLight.Direction;
-    float Intensity = max(dot(LightVector, pin.NormalW), 0.0f);
+    LightingOutput result = ComputeDirectionalLight(gMaterial, gLight, pin.NormalW);
     
-    float4 Ambient = 0.3f * SampleColor;
-    float4 Diffuse = Intensity * SampleColor;
+    float4 SampleColor = DiffuseMap.Sample(SamState, pin.Tex);
+    float4 final = SampleColor * (result.Ambient + result.Diffuse + result.Specular);
     
-    return Diffuse + Ambient;
+    return final;
 }

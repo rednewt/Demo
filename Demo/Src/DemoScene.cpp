@@ -66,7 +66,7 @@ bool DemoScene::CreateBuffers()
 	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
 	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.ByteWidth = sizeof(VS_ConstantBufferPerObject);
+	cbDesc.ByteWidth = sizeof(VS_PS_ConstantBufferPerObject);
 
 	D3D11_SUBRESOURCE_DATA cbData = {};
 	cbData.pSysMem = &m_CBPerObjectData;
@@ -120,7 +120,6 @@ void DemoScene::UpdateScene(float dt)
 
 	XMMATRIX RotateY = XMMatrixRotationY(XMConvertToRadians(angle));
 
-
 	XMMATRIX worldCube = RotateY * XMMatrixTranslation(-2, 0, 0);
 	XMMATRIX worldCylinder = XMMatrixTranslation(2, 0, 0);
 	
@@ -155,31 +154,36 @@ void DemoScene::DrawScene()
 {
 	Clear();
 
-	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCube.GetAddressOf());
+	//Set CBPerObject for VS & PS
 	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CBPerObject.GetAddressOf());
-	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CBPerFrame.GetAddressOf());
+	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CBPerObject.GetAddressOf());
+	//Set CBPerFrame for PS
+	m_ImmediateContext->PSSetConstantBuffers(1, 1, m_CBPerFrame.GetAddressOf());
 
 	UINT stride = sizeof(GeometricPrimitive::VertexType);
 	UINT offset = 0;
 	
-	//Set Cube transform
+	//Set Cube transform & Material
 	m_CBPerObjectData.WorldViewProj = m_DrawableCube->WorldViewProjTransform;
 	m_CBPerObjectData.World = m_DrawableCube->WorldTransform;
 	m_CBPerObjectData.WorldInverseTranspose = Helpers::ComputeInverseTranspose(m_DrawableCube->WorldTransform);
+	m_CBPerObjectData.Material = m_DrawableCube->Material;
 	D3D11_MAPPED_SUBRESOURCE mappedRes = {};
 	m_ImmediateContext->Map(m_CBPerObject.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
 	memcpy(mappedRes.pData, &m_CBPerObjectData, sizeof(m_CBPerObjectData));
 	m_ImmediateContext->Unmap(m_CBPerObject.Get(), 0);
 
 	//Draw Cube
+	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCube.GetAddressOf());
 	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableCube->VertexBuffer.GetAddressOf(), &stride, &offset);
 	m_ImmediateContext->IASetIndexBuffer(m_DrawableCube->IndexBuffer.Get(), m_DrawableCube->IndexBufferFormat, 0);
 	m_ImmediateContext->DrawIndexed(m_DrawableCube->IndexCount, 0, 0);
 
-	//Set Cylinder Transform
+	//Set Cylinder Transform & Material
 	m_CBPerObjectData.WorldViewProj = m_DrawableCylinder->WorldViewProjTransform;
 	m_CBPerObjectData.World = m_DrawableCylinder->WorldTransform;
 	m_CBPerObjectData.WorldInverseTranspose = Helpers::ComputeInverseTranspose(m_DrawableCylinder->WorldTransform);
+	m_CBPerObjectData.Material = m_DrawableCylinder->Material;
 	m_ImmediateContext->Map(m_CBPerObject.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
 	memcpy(mappedRes.pData, &m_CBPerObjectData, sizeof(m_CBPerObjectData));
 	m_ImmediateContext->Unmap(m_CBPerObject.Get(), 0); 

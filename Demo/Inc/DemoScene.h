@@ -1,52 +1,16 @@
 #pragma once
 
 #include "DemoBase.h"
-
+#include "Lights.h"
 
 namespace
 {
-	struct VS_ConstantBufferPerObject
+	struct VS_PS_ConstantBufferPerObject
 	{
 		DirectX::XMFLOAT4X4 WorldViewProj;
 		DirectX::XMFLOAT4X4 World;
 		DirectX::XMFLOAT4X4 WorldInverseTranspose;
-	};
-
-
-	struct Material
-	{
-		Material() { ZeroMemory(this, sizeof(this)); }
-
-		XMFLOAT4 Ambient;
-		XMFLOAT4 Diffuse;
-		XMFLOAT4 Specular; // w = SpecPower
-	};
-
-	struct DirectionalLight
-	{
-		DirectX::XMFLOAT4 Ambient;
-		DirectX::XMFLOAT4 Diffuse;
-		DirectX::XMFLOAT4 Specular;
-		DirectX::XMFLOAT3 Direction;
-		float padding;
-
-		DirectionalLight()
-		{
-			Ambient = DirectX::XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
-			Diffuse = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		}
-
-		void SetDirection(DirectX::FXMVECTOR direction)
-		{
-			DirectX::XMVECTOR v = DirectX::XMVector3Normalize(direction);
-			DirectX::XMStoreFloat3(&Direction, v);
-		}
-
-		void SetDirection(const DirectX::XMFLOAT3& direction)
-		{
-			DirectX::XMVECTOR v = DirectX::XMLoadFloat3(&direction);
-			SetDirection(v);
-		}
+		Material Material;
 	};
 
 	struct PS_ConstantBufferPerFrame
@@ -102,10 +66,11 @@ struct Drawable
 	Microsoft::WRL::ComPtr<ID3D11Buffer> VertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> IndexBuffer;
 	uint32_t IndexCount;
-	DXGI_FORMAT IndexBufferFormat;
 	uint32_t VertexCount;
+	DXGI_FORMAT IndexBufferFormat;
 	DirectX::XMFLOAT4X4 WorldViewProjTransform;
 	DirectX::XMFLOAT4X4 WorldTransform;
+	Material Material;
 };
 
 
@@ -124,7 +89,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CBPerObject;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CBPerFrame;
 
-	VS_ConstantBufferPerObject m_CBPerObjectData;
+	VS_PS_ConstantBufferPerObject m_CBPerObjectData;
 	PS_ConstantBufferPerFrame m_CBPerFrameData;
 
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_SRVCube;

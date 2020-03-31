@@ -159,6 +159,7 @@
     <ClInclude Include="Inc\DemoBase.h" />
     <ClInclude Include="Inc\DemoScene.h" />
     <ClInclude Include="Inc\Helpers.h" />
+    <ClInclude Include="Inc\Lights.h" />
     <ClInclude Include="Inc\pch.h" />
     <ClInclude Include="Inc\Timer.h" />
     <ClInclude Include="Inc\Vertex.h" />
@@ -177,6 +178,9 @@
     <ClCompile Include="Src\Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Src\Shaders\Common.fx">
+      <FileType>Document</FileType>
+    </None>
     <FxCompile Include="Src\Shaders\PixelShader.hlsl">
       <VariableName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">g_PSBasicShader</VariableName>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Src\Shaders\Compiled\BasicShaderPS.h</HeaderFileOutput>
