@@ -27,9 +27,9 @@ float4 main(VertexOut pin) : SV_TARGET
 {
     float4 SampleColor = DiffuseMap.Sample(SamState, pin.Tex);
     
-    //Interpolating normal can unnormalize it
     pin.NormalW = normalize(pin.NormalW);
     
+    //Expects Direction Vector to be normalized 
     float3 LightVector = -gLight.Direction;
     float Intensity = max(dot(LightVector, pin.NormalW), 0.0f);
     

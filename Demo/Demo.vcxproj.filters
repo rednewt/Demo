@@ -16,6 +16,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{8215817f-6441-4fb7-8658-31fe7cb081df}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Basic">
+      <UniqueIdentifier>{8c082b9f-7f23-4449-b9c2-44e4a34bf0f1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -63,10 +66,10 @@
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Src\Shaders\PixelShader.hlsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\Basic</Filter>
     </FxCompile>
     <FxCompile Include="Src\Shaders\VertexShader.hlsl">
-      <Filter>Shaders</Filter>
+      <Filter>Shaders\Basic</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

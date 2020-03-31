@@ -12,10 +12,29 @@ namespace
 		DirectX::XMFLOAT4X4 WorldInverseTranspose;
 	};
 
+
+	struct Material
+	{
+		Material() { ZeroMemory(this, sizeof(this)); }
+
+		XMFLOAT4 Ambient;
+		XMFLOAT4 Diffuse;
+		XMFLOAT4 Specular; // w = SpecPower
+	};
+
 	struct DirectionalLight
 	{
+		DirectX::XMFLOAT4 Ambient;
+		DirectX::XMFLOAT4 Diffuse;
+		DirectX::XMFLOAT4 Specular;
 		DirectX::XMFLOAT3 Direction;
 		float padding;
+
+		DirectionalLight()
+		{
+			Ambient = DirectX::XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
+			Diffuse = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		}
 
 		void SetDirection(DirectX::FXMVECTOR direction)
 		{

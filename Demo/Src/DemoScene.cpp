@@ -16,7 +16,7 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableCube = std::make_unique<Drawable>();
 	m_DrawableCylinder = std::make_unique<Drawable>();
 
-	m_CBPerFrameData.Light.SetDirection(XMFLOAT3(1.0f, 1.0f, 1.0f));
+	m_CBPerFrameData.Light.SetDirection(XMFLOAT3(0.0f, 0.0f, 1.0f));
 }
 
 bool DemoScene::CreateDeviceDependentResources()
@@ -116,11 +116,13 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX view = XMMatrixLookAtLH(eyePos, focus, up);
 	
 	static float angle = 0.0f;
-	angle += 1.0f * dt;
+	angle += 45.0f * dt;
 
-	XMMATRIX worldCube = XMMatrixTranslation(-2, 0, 0);
+	XMMATRIX RotateY = XMMatrixRotationY(XMConvertToRadians(angle));
+
+
+	XMMATRIX worldCube = RotateY * XMMatrixTranslation(-2, 0, 0);
 	XMMATRIX worldCylinder = XMMatrixTranslation(2, 0, 0);
-	
 	
 	XMMATRIX viewProj = view * proj;
 	XMMATRIX WVPCube = worldCube * viewProj;
@@ -132,8 +134,8 @@ void DemoScene::UpdateScene(float dt)
 	XMStoreFloat4x4(&m_DrawableCylinder->WorldViewProjTransform, WVPCylinder);
 
 	//Animate light
-	XMMATRIX RotateY = XMMatrixRotationZ(XMConvertToRadians(0.1f));
-	m_CBPerFrameData.Light.SetDirection(XMVector4Transform(XMLoadFloat3(&m_CBPerFrameData.Light.Direction), RotateY));
+	static XMFLOAT3 lightDir = m_CBPerFrameData.Light.Direction;
+	m_CBPerFrameData.Light.SetDirection(XMVector3Transform(XMLoadFloat3(&lightDir), RotateY));
 
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
 	m_ImmediateContext->Map(m_CBPerFrame.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
@@ -145,13 +147,14 @@ void DemoScene::Clear()
 {
 	m_ImmediateContext->ClearRenderTargetView(m_RenderTargetView.Get(), DirectX::Colors::Black);
 	m_ImmediateContext->ClearDepthStencilView(m_DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 }
 
 void DemoScene::DrawScene()
 {
 	Clear();
 
-	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCube.GetAddressOf());
 	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CBPerObject.GetAddressOf());
 	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CBPerFrame.GetAddressOf());
