@@ -3,6 +3,8 @@
 #include <DDSTextureLoader.h>
 #include <WICTextureLoader.h>
 #include <GeometricPrimitive.h>
+
+//These headers may not be present, so you may need to build the project first
 #include "Shaders\Compiled\BasicShaderPS.h"
 #include "Shaders\Compiled\BasicShaderVS.h"
 
@@ -172,7 +174,7 @@ void DemoScene::DrawScene()
 	m_ImmediateContext->Map(m_CBPerObject.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
 	memcpy(mappedRes.pData, &m_CBPerObjectData, sizeof(m_CBPerObjectData));
 	m_ImmediateContext->Unmap(m_CBPerObject.Get(), 0);
-
+	
 	//Draw Cube
 	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCube.GetAddressOf());
 	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableCube->VertexBuffer.GetAddressOf(), &stride, &offset);

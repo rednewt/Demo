@@ -3,8 +3,8 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-# Shader bytecode header
-Demo/Shaders/*.h
+# Shader bytecode headers
+Demo/Src/Shaders/Compiled/*.h
 
 # User-specific files
 *.rsuser
