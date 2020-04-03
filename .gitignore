@@ -6,6 +6,9 @@
 # Shader bytecode headers
 Demo/Src/Shaders/Compiled/*.h
 
+# imgui settings file
+imgui.ini
+
 # User-specific files
 *.rsuser
 *.suo
