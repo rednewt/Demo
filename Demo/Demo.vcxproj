@@ -159,6 +159,14 @@
     <ClInclude Include="Inc\DemoBase.h" />
     <ClInclude Include="Inc\DemoScene.h" />
     <ClInclude Include="Inc\Helpers.h" />
+    <ClInclude Include="Inc\imconfig.h" />
+    <ClInclude Include="Inc\imgui.h" />
+    <ClInclude Include="Inc\imgui_impl_dx11.h" />
+    <ClInclude Include="Inc\imgui_impl_win32.h" />
+    <ClInclude Include="Inc\imgui_internal.h" />
+    <ClInclude Include="Inc\imstb_rectpack.h" />
+    <ClInclude Include="Inc\imstb_textedit.h" />
+    <ClInclude Include="Inc\imstb_truetype.h" />
     <ClInclude Include="Inc\Lights.h" />
     <ClInclude Include="Inc\pch.h" />
     <ClInclude Include="Inc\Timer.h" />
@@ -167,6 +175,24 @@
   <ItemGroup>
     <ClCompile Include="Src\DemoBase.cpp" />
     <ClCompile Include="Src\DemoScene.cpp" />
+    <ClCompile Include="Src\imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Src\imgui_demo.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Src\imgui_draw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Src\imgui_impl_dx11.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Src\imgui_impl_win32.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Src\imgui_widgets.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Src\main.cpp" />
     <ClCompile Include="Src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

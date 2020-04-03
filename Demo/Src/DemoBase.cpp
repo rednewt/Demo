@@ -1,5 +1,8 @@
 #include "pch.h"
 #include "DemoBase.h"
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx11.h"
 
 using namespace Microsoft::WRL;
 
@@ -20,6 +23,26 @@ DemoBase::DemoBase(const HWND& hwnd) :
 	
 	m_ClientWidth = rect.right - rect.left;
 	m_ClientHeight = rect.bottom - rect.top;
+}
+
+DemoBase::~DemoBase()
+{
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+}
+
+void DemoBase::Init_imgui()
+{
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+	ImGui_ImplWin32_Init(m_MainWindow);
+	ImGui_ImplDX11_Init(m_Device.Get(), m_ImmediateContext.Get());
 }
 
 bool DemoBase::Initialize()
@@ -95,6 +118,8 @@ bool DemoBase::Initialize()
 	dxgiFactory.Reset();
 	
 	OnResize();
+
+	Init_imgui();
 
 	return true;
 }

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Timer.h"
 #include "DemoScene.h"
+#include "imgui.h"
+
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -106,8 +108,14 @@ bool InitializeWindow(HINSTANCE hInstance, HWND& windowHandle)
 	return true;
 }
 
+
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam))
+		return true;
 
 	switch (Msg)
 	{

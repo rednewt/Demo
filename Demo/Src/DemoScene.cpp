@@ -3,11 +3,13 @@
 #include <DDSTextureLoader.h>
 #include <WICTextureLoader.h>
 #include <GeometricPrimitive.h>
-
 //These headers may not be present, so you may need to build the project first
 #include "Shaders\Compiled\BasicShaderPS.h"
 #include "Shaders\Compiled\BasicShaderVS.h"
 
+#include "imgui.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx11.h"
 
 using namespace DirectX;
 
@@ -149,6 +151,9 @@ void DemoScene::Clear()
 	m_ImmediateContext->ClearRenderTargetView(m_RenderTargetView.Get(), DirectX::Colors::Black);
 	m_ImmediateContext->ClearDepthStencilView(m_DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
 
 }
 
@@ -196,7 +201,11 @@ void DemoScene::DrawScene()
 	m_ImmediateContext->IASetIndexBuffer(m_DrawableCylinder->IndexBuffer.Get(), m_DrawableCylinder->IndexBufferFormat, 0);
 	m_ImmediateContext->DrawIndexed(m_DrawableCylinder->IndexCount, 0, 0);
 
-	
+
+	ImGui::ShowDemoWindow();
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
 	m_SwapChain->Present(0, 0);
 }
 

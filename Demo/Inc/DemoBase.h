@@ -30,7 +30,7 @@ protected:
 	DXGI_FORMAT m_DepthStencilBufferFormat;
 public:
 	DemoBase(const HWND& hwnd);
-	virtual ~DemoBase() = default;
+	virtual ~DemoBase();
 
 	virtual bool Initialize();
 	virtual void OnResize();
@@ -38,5 +38,6 @@ public:
 	virtual void UpdateScene(float dt) = 0;
 	virtual void DrawScene() = 0;
 
-
+private:
+	void Init_imgui();
 };
