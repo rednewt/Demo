@@ -33,18 +33,20 @@ cbuffer cbPerObject : register(b0)
 
 typedef Material LightingOutput;
 
-LightingOutput ComputeDirectionalLight(Material mat, DirectionalLight light, float3 normal)
+LightingOutput ComputeDirectionalLight(Material mat, DirectionalLight light, float3 normal, float3 ToEyeVector)
 {
     LightingOutput result;
     
     result.Ambient = mat.Ambient * light.Ambient;
     
     float diffuseIntensity = max(dot(-light.Direction, normal), 0);
+    result.Diffuse = diffuseIntensity * (mat.Diffuse * light.Diffuse);
     
-    result.Diffuse = diffuseIntensity * mat.Diffuse * light.Diffuse;
-
-    //no specular yet
-    result.Specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    
+    float3 reflectVector = normalize(reflect(light.Direction, normal));
+    float specularIntensity = pow(max(dot(reflectVector, ToEyeVector), 0), mat.Specular.w);
+    
+    result.Specular = specularIntensity * (mat.Specular * light.Specular);
 
     return result;
 }

@@ -16,6 +16,8 @@ namespace
 	struct PS_ConstantBufferPerFrame
 	{
 		DirectionalLight Light;
+		DirectX::XMFLOAT3 EyePos;
+		float pad;
 	};
 }
 
@@ -104,12 +106,10 @@ public:
 	bool Initialize() override;
 	void UpdateScene(float dt) override;
 	void DrawScene() override;
-
 private:
 	DemoScene(const DemoScene&) = default;
 
 	void Clear();
 	bool CreateDeviceDependentResources();
 	bool CreateBuffers();
-
 };

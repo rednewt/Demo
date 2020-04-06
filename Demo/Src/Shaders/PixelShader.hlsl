@@ -5,6 +5,8 @@
 cbuffer cbPerFrame : register(b1)
 {
     DirectionalLight gLight;
+    float3 gEyePos; //world space
+    float pad;
 };
 
 
@@ -15,10 +17,11 @@ float4 main(VertexOut pin) : SV_TARGET
 {
     pin.NormalW = normalize(pin.NormalW);
     
-    LightingOutput result = ComputeDirectionalLight(gMaterial, gLight, pin.NormalW);
+    float3 ToEyeVector = normalize(gEyePos - pin.PosW);
+    LightingOutput result = ComputeDirectionalLight(gMaterial, gLight, pin.NormalW, ToEyeVector);
     
     float4 SampleColor = DiffuseMap.Sample(SamState, pin.Tex);
-    float4 final = SampleColor * (result.Ambient + result.Diffuse + result.Specular);
-    
+    float4 final = SampleColor * (result.Ambient + result.Diffuse) + result.Specular;
+      
     return final;
 }

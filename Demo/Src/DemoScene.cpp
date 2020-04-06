@@ -19,8 +19,10 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_CBPerObjectData = {};
 	m_DrawableCube = std::make_unique<Drawable>();
 	m_DrawableCylinder = std::make_unique<Drawable>();
-
+	
 	m_CBPerFrameData.Light.SetDirection(XMFLOAT3(0.0f, 0.0f, 1.0f));
+
+	m_DrawableCube->Material.Specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 bool DemoScene::CreateDeviceDependentResources()
@@ -112,9 +114,23 @@ bool DemoScene::Initialize()
 
 void DemoScene::UpdateScene(float dt)
 {
-	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 0.1f, 200.0f);
+	ImGui_NewFrame();
+
+	static float FoV = 45;
+	static float FarZ = 200;
+	static float NearZ = 0.1f;
+
+	if (ImGui::BeginMenu("Projection matrix properties"))
+	{
+		ImGui::SliderFloat("FoV-Y:", &FoV, 1, 180);
+		ImGui::SliderFloat("Far-Z:", &FarZ, 20, 2000);
+		ImGui::SliderFloat("Near-Z:", &NearZ, 0.1f, 500.0f);
+		ImGui::EndMenu();
+	}
 	
-	XMVECTOR eyePos = XMVectorSet(0, 0, -10.0f, 1.0f);
+	
+	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(FoV), static_cast<float>(m_ClientWidth) / m_ClientHeight, NearZ, FarZ);
+	XMVECTOR eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMVECTOR focus = XMVectorSet(0, 0, 0, 1);
 	XMMATRIX view = XMMatrixLookAtLH(eyePos, focus, up);
@@ -135,25 +151,29 @@ void DemoScene::UpdateScene(float dt)
 	XMStoreFloat4x4(&m_DrawableCube->WorldViewProjTransform, WVPCube);
 	XMStoreFloat4x4(&m_DrawableCylinder->WorldTransform, worldCylinder);
 	XMStoreFloat4x4(&m_DrawableCylinder->WorldViewProjTransform, WVPCylinder);
-
-	//Animate light
-	static XMFLOAT3 lightDir = m_CBPerFrameData.Light.Direction;
-	m_CBPerFrameData.Light.SetDirection(XMVector3Transform(XMLoadFloat3(&lightDir), RotateY));
+	
+	
+	static XMFLOAT3 inputLightVector = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	ImGui::InputFloat3("Directional Light:", reinterpret_cast<float*>(&inputLightVector), 2);
+	
+	m_CBPerFrameData.Light.SetDirection(inputLightVector);
+	XMStoreFloat3(&m_CBPerFrameData.EyePos, eyePos);
 
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
 	m_ImmediateContext->Map(m_CBPerFrame.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
 	memcpy(mappedRes.pData, &m_CBPerFrameData, sizeof(m_CBPerFrameData));
 	m_ImmediateContext->Unmap(m_CBPerFrame.Get(), 0);
+
+
 }
 
 void DemoScene::Clear()
 {
-	m_ImmediateContext->ClearRenderTargetView(m_RenderTargetView.Get(), DirectX::Colors::Black);
+	static XMVECTORF32 clearColor = DirectX::Colors::Black;
+	ImGui::ColorEdit4("clear color:", reinterpret_cast<float*>(&clearColor));
+	m_ImmediateContext->ClearRenderTargetView(m_RenderTargetView.Get(), clearColor);
 	m_ImmediateContext->ClearDepthStencilView(m_DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	ImGui_ImplDX11_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
 
 }
 
@@ -206,6 +226,6 @@ void DemoScene::DrawScene()
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
-	m_SwapChain->Present(0, 0);
+	m_SwapChain->Present(1, 0);
 }
 

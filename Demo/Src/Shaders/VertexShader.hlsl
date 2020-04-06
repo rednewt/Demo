@@ -9,10 +9,10 @@ struct VertexIn
 
 
 VertexOut main( VertexIn vin ) 
-{
+{ 
     VertexOut vout;
     
-    vout.PosW = mul(float4(vin.PosL, 1.0f), gWorld).xyz;
+    vout.PosW = mul(float4(vin.PosL, 1.0f), gWorld).xyz;  
     vout.PosH = mul(float4(vin.PosL, 1.0f), gWorldViewProj);
     vout.NormalW = mul(vin.NormalL, (float3x3) gWorldInverseTranspose);
     vout.Tex = vin.Tex;

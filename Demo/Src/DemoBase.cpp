@@ -32,17 +32,24 @@ DemoBase::~DemoBase()
 	ImGui::DestroyContext();
 }
 
-void DemoBase::Init_imgui()
+void DemoBase::Init_ImGui()
 {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	//ImGuiIO& io = ImGui::GetIO(); (void)io;
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	ImGui_ImplWin32_Init(m_MainWindow);
 	ImGui_ImplDX11_Init(m_Device.Get(), m_ImmediateContext.Get());
+}
+
+void DemoBase::ImGui_NewFrame()
+{
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
 }
 
 bool DemoBase::Initialize()
@@ -119,7 +126,7 @@ bool DemoBase::Initialize()
 	
 	OnResize();
 
-	Init_imgui();
+	Init_ImGui();
 
 	return true;
 }

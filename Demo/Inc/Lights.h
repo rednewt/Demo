@@ -9,7 +9,7 @@ struct Material
 		//By default, the material receives all the light
 		Ambient = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		Diffuse = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		Specular = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 16.0f);
+		Specular = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	}
 
 	DirectX::XMFLOAT4 Ambient;
@@ -29,7 +29,7 @@ struct DirectionalLight
 	{
 		SetDirection(DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f));
 
-		Ambient = DirectX::XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
+		Ambient = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
 		Diffuse = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		Specular = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f);
 
@@ -45,5 +45,10 @@ struct DirectionalLight
 	{
 		DirectX::XMVECTOR v = DirectX::XMLoadFloat3(&direction);
 		SetDirection(v);
+	}
+
+	void NormalizeDirection()
+	{
+		SetDirection(Direction);
 	}
 };

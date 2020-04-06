@@ -39,5 +39,7 @@ public:
 	virtual void DrawScene() = 0;
 
 private:
-	void Init_imgui();
+	void Init_ImGui();
+protected:
+	void ImGui_NewFrame();
 };
