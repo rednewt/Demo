@@ -17,12 +17,13 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	Super(hwnd)
 {
 	m_CBPerObjectData = {};
+	m_CBPerFrameData = {};
+
 	m_DrawableCube = std::make_unique<Drawable>();
 	m_DrawableCylinder = std::make_unique<Drawable>();
-	
-	m_CBPerFrameData.Light.SetDirection(XMFLOAT3(0.0f, 0.0f, 1.0f));
 
-	m_DrawableCube->Material.Specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	m_DrawableCube->Material.Ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
+	m_DrawableCylinder->Material.Ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 }
 
 bool DemoScene::CreateDeviceDependentResources()
@@ -41,7 +42,6 @@ bool DemoScene::CreateDeviceDependentResources()
 
 	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\metal.jpg", 0, m_SRVCylinder.ReleaseAndGetAddressOf()))
 		return false;
-
 
 	if (!CreateBuffers())
 		return false;
@@ -119,8 +119,7 @@ void DemoScene::UpdateScene(float dt)
 	static float FoV = 45;
 	static float FarZ = 200;
 	static float NearZ = 0.1f;
-
-	if (ImGui::BeginMenu("Projection matrix properties"))
+	if (ImGui::BeginMenu("Projection Matrix"))
 	{
 		ImGui::SliderFloat("FoV-Y:", &FoV, 1, 180);
 		ImGui::SliderFloat("Far-Z:", &FarZ, 20, 2000);
@@ -131,6 +130,7 @@ void DemoScene::UpdateScene(float dt)
 	
 	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(FoV), static_cast<float>(m_ClientWidth) / m_ClientHeight, NearZ, FarZ);
 	XMVECTOR eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMVECTOR focus = XMVectorSet(0, 0, 0, 1);
 	XMMATRIX view = XMMatrixLookAtLH(eyePos, focus, up);
@@ -152,29 +152,61 @@ void DemoScene::UpdateScene(float dt)
 	XMStoreFloat4x4(&m_DrawableCylinder->WorldTransform, worldCylinder);
 	XMStoreFloat4x4(&m_DrawableCylinder->WorldViewProjTransform, WVPCylinder);
 	
-	
-	static XMFLOAT3 inputLightVector = XMFLOAT3(0.0f, 0.0f, 1.0f);
-	ImGui::InputFloat3("Directional Light:", reinterpret_cast<float*>(&inputLightVector), 2);
-	
-	m_CBPerFrameData.Light.SetDirection(inputLightVector);
-	XMStoreFloat3(&m_CBPerFrameData.EyePos, eyePos);
 
+	static XMFLOAT3 inputLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
 	m_ImmediateContext->Map(m_CBPerFrame.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
+	XMStoreFloat3(&m_CBPerFrameData.EyePos, eyePos);
+	m_CBPerFrameData.DirLight.SetDirection(inputLightVector);
 	memcpy(mappedRes.pData, &m_CBPerFrameData, sizeof(m_CBPerFrameData));
 	m_ImmediateContext->Unmap(m_CBPerFrame.Get(), 0);
 
+	if (ImGui::BeginMenu("Directional Light"))
+	{
+		ImGui::ColorEdit4("Ambient", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Ambient), 2);
+		ImGui::ColorEdit4("Diffuse", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Diffuse), 2);
+		ImGui::ColorEdit3("Specular", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Specular), 2);
+		ImGui::InputFloat3("Direction", reinterpret_cast<float*>(&inputLightVector), 2);
 
+		ImGui::EndMenu();
+	}
+
+	if (ImGui::BeginMenu("Point Light"))
+	{
+		ImGui::ColorEdit4("Ambient", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Ambient), 2);
+		ImGui::ColorEdit4("Diffuse", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Diffuse), 2);
+		ImGui::ColorEdit3("Specular", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Specular), 2);
+		ImGui::InputFloat3("Position", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Position), 2);
+		ImGui::InputFloat3("Attenuation", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Attenuation), 2);
+
+		ImGui::EndMenu();
+	}
+
+
+	if (ImGui::BeginMenu("Cylinder Material"))
+	{
+		ImGui::InputFloat4("Ambient", reinterpret_cast<float*>(&m_DrawableCylinder->Material.Ambient), 2);
+		ImGui::InputFloat4("Diffuse", reinterpret_cast<float*>(&m_DrawableCylinder->Material.Diffuse), 2);
+		ImGui::InputFloat4("Specular", reinterpret_cast<float*>(&m_DrawableCylinder->Material.Specular), 2);
+
+		ImGui::EndMenu();
+	}
+
+	if (ImGui::BeginMenu("Cube Material"))
+	{
+		ImGui::InputFloat4("Ambient", reinterpret_cast<float*>(&m_DrawableCube->Material.Ambient), 2);
+		ImGui::InputFloat4("Diffuse", reinterpret_cast<float*>(&m_DrawableCube->Material.Diffuse), 2);
+		ImGui::InputFloat4("Specular", reinterpret_cast<float*>(&m_DrawableCube->Material.Specular), 2);
+
+		ImGui::EndMenu();
+	}
 }
 
 void DemoScene::Clear()
 {
-	static XMVECTORF32 clearColor = DirectX::Colors::Black;
-	ImGui::ColorEdit4("clear color:", reinterpret_cast<float*>(&clearColor));
-	m_ImmediateContext->ClearRenderTargetView(m_RenderTargetView.Get(), clearColor);
+	m_ImmediateContext->ClearRenderTargetView(m_RenderTargetView.Get(), DirectX::Colors::Black);
 	m_ImmediateContext->ClearDepthStencilView(m_DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 }
 
 void DemoScene::DrawScene()
@@ -193,7 +225,7 @@ void DemoScene::DrawScene()
 	//Set Cube transform & Material
 	m_CBPerObjectData.WorldViewProj = m_DrawableCube->WorldViewProjTransform;
 	m_CBPerObjectData.World = m_DrawableCube->WorldTransform;
-	m_CBPerObjectData.WorldInverseTranspose = Helpers::ComputeInverseTranspose(m_DrawableCube->WorldTransform);
+	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableCube->WorldTransform);
 	m_CBPerObjectData.Material = m_DrawableCube->Material;
 	D3D11_MAPPED_SUBRESOURCE mappedRes = {};
 	m_ImmediateContext->Map(m_CBPerObject.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
@@ -209,7 +241,7 @@ void DemoScene::DrawScene()
 	//Set Cylinder Transform & Material
 	m_CBPerObjectData.WorldViewProj = m_DrawableCylinder->WorldViewProjTransform;
 	m_CBPerObjectData.World = m_DrawableCylinder->WorldTransform;
-	m_CBPerObjectData.WorldInverseTranspose = Helpers::ComputeInverseTranspose(m_DrawableCylinder->WorldTransform);
+	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableCylinder->WorldTransform);
 	m_CBPerObjectData.Material = m_DrawableCylinder->Material;
 	m_ImmediateContext->Map(m_CBPerObject.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
 	memcpy(mappedRes.pData, &m_CBPerObjectData, sizeof(m_CBPerObjectData));

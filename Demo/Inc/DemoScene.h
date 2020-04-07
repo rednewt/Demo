@@ -9,13 +9,14 @@ namespace
 	{
 		DirectX::XMFLOAT4X4 WorldViewProj;
 		DirectX::XMFLOAT4X4 World;
-		DirectX::XMFLOAT4X4 WorldInverseTranspose;
+		DirectX::XMFLOAT4X4 WorldInvTranspose;
 		Material Material;
 	};
 
 	struct PS_ConstantBufferPerFrame
 	{
-		DirectionalLight Light;
+		DirectionalLight DirLight;
+		PointLight PointLight;
 		DirectX::XMFLOAT3 EyePos;
 		float pad;
 	};

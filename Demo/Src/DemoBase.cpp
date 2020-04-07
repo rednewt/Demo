@@ -37,8 +37,6 @@ void DemoBase::Init_ImGui()
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	//ImGuiIO& io = ImGui::GetIO(); (void)io;
-
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	ImGui_ImplWin32_Init(m_MainWindow);

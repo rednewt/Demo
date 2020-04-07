@@ -6,10 +6,10 @@ struct Material
 {
 	Material()
 	{
-		//By default, the material receives all the light
+		//By default, the material receives all the diffuse/ambient light and no specular light
 		Ambient = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		Diffuse = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		Specular = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
+		Specular = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f); 
 	}
 
 	DirectX::XMFLOAT4 Ambient;
@@ -17,11 +17,36 @@ struct Material
 	DirectX::XMFLOAT4 Specular; // w = SpecPower
 };
 
+struct PointLight
+{
+	PointLight() :
+		Range(100.0f)
+	{
+		DirectX::XMStoreFloat3(&Position, DirectX::XMVectorZero());
+		DirectX::XMStoreFloat3(&Attenuation, DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+		Ambient = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+		Diffuse = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+		Specular = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	}
+
+	DirectX::XMFLOAT4 Ambient;
+	DirectX::XMFLOAT4 Diffuse;
+	DirectX::XMFLOAT4 Specular; 
+	
+	DirectX::XMFLOAT3 Position;
+	float Range;
+
+	DirectX::XMFLOAT3 Attenuation;
+	float pad;
+
+};
+
 struct DirectionalLight
 {
 	DirectX::XMFLOAT4 Ambient;
 	DirectX::XMFLOAT4 Diffuse;
-	DirectX::XMFLOAT4 Specular; //w isn't of much use here
+	DirectX::XMFLOAT4 Specular; 
 	DirectX::XMFLOAT3 Direction;
 	float pad;
 
@@ -31,7 +56,7 @@ struct DirectionalLight
 
 		Ambient = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
 		Diffuse = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-		Specular = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f);
+		Specular = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	}
 
