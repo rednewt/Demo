@@ -19,16 +19,27 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_CBPerObjectData = {};
 	m_CBPerFrameData = {};
 
-	m_DrawableCube = std::make_unique<Drawable>();
-	m_DrawableCylinder = std::make_unique<Drawable>();
+	//Setup DirectionalLight
+	m_CBPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	//Setup Pointlight
+	m_CBPerFrameData.PointLight.Position = XMFLOAT3(1.0f, 2.0f, 0.0f);
+	//Setup Spotlight
+	m_CBPerFrameData.SpotLight.Position = XMFLOAT3(0.0f, 0.0f, -3.0f);
+	m_CBPerFrameData.SpotLight.Direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
 
-	m_DrawableCube->Material.Ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
-	m_DrawableCylinder->Material.Ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	m_DrawableBox = std::make_unique<Drawable>();
+	m_DrawableSphere = std::make_unique<Drawable>();
+
+	m_DrawableBox->Material.Ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
+	m_DrawableSphere->Material.Ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 }
 
 bool DemoScene::CreateDeviceDependentResources()
 {
-	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount, g_VSBasicShader, sizeof(g_VSBasicShader), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, 
+		GeometricPrimitive::VertexType::InputElementCount, 
+		g_VSBasicShader, sizeof(g_VSBasicShader), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
 		return false;
 
 	if FAILED(m_Device->CreateVertexShader(g_VSBasicShader, sizeof(g_VSBasicShader), nullptr, m_SimpleVertexShader.ReleaseAndGetAddressOf()))
@@ -54,7 +65,7 @@ bool DemoScene::CreateDeviceDependentResources()
 	
 	if FAILED(m_Device->CreateSamplerState(&desc, m_SamplerDefault.ReleaseAndGetAddressOf()))
 		return false;
-
+	
 	return true;
 }
 
@@ -63,10 +74,10 @@ bool DemoScene::CreateBuffers()
 	std::vector<GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
 	
-	GeometricPrimitive::CreateCylinder(vertices, indices, 3.0f, 1.0f, 32U, false);
-	m_DrawableCylinder->Create(m_Device.Get(), vertices, indices);
+	GeometricPrimitive::CreateSphere(vertices, indices, 3.0f, 32, false);
+	m_DrawableSphere->Create(m_Device.Get(), vertices, indices);
 	GeometricPrimitive::CreateBox(vertices, indices, XMFLOAT3(3.0f, 3.0f, 3.0f), false);
-	m_DrawableCube->Create(m_Device.Get(), vertices, indices);
+	m_DrawableBox->Create(m_Device.Get(), vertices, indices);
 
 	D3D11_BUFFER_DESC cbDesc = {};
 	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -116,19 +127,7 @@ void DemoScene::UpdateScene(float dt)
 {
 	ImGui_NewFrame();
 
-	static float FoV = 45;
-	static float FarZ = 200;
-	static float NearZ = 0.1f;
-	if (ImGui::BeginMenu("Projection Matrix"))
-	{
-		ImGui::SliderFloat("FoV-Y:", &FoV, 1, 180);
-		ImGui::SliderFloat("Far-Z:", &FarZ, 20, 2000);
-		ImGui::SliderFloat("Near-Z:", &NearZ, 0.1f, 500.0f);
-		ImGui::EndMenu();
-	}
-	
-	
-	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(FoV), static_cast<float>(m_ClientWidth) / m_ClientHeight, NearZ, FarZ);
+	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 0.1f, 200.0f);
 	XMVECTOR eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
 
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
@@ -141,65 +140,96 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX RotateY = XMMatrixRotationY(XMConvertToRadians(angle));
 
 	XMMATRIX worldCube = RotateY * XMMatrixTranslation(-2, 0, 0);
-	XMMATRIX worldCylinder = XMMatrixTranslation(2, 0, 0);
+	XMMATRIX worldCylinder = RotateY * XMMatrixTranslation(2, 0, 0);
 	
 	XMMATRIX viewProj = view * proj;
 	XMMATRIX WVPCube = worldCube * viewProj;
 	XMMATRIX WVPCylinder = worldCylinder * viewProj;
 
-	XMStoreFloat4x4(&m_DrawableCube->WorldTransform, worldCube);
-	XMStoreFloat4x4(&m_DrawableCube->WorldViewProjTransform, WVPCube);
-	XMStoreFloat4x4(&m_DrawableCylinder->WorldTransform, worldCylinder);
-	XMStoreFloat4x4(&m_DrawableCylinder->WorldViewProjTransform, WVPCylinder);
+	XMStoreFloat4x4(&m_DrawableBox->WorldTransform, worldCube);
+	XMStoreFloat4x4(&m_DrawableBox->WorldViewProjTransform, WVPCube);
+	XMStoreFloat4x4(&m_DrawableSphere->WorldTransform, worldCylinder);
+	XMStoreFloat4x4(&m_DrawableSphere->WorldViewProjTransform, WVPCylinder);
 	
 
-	static XMFLOAT3 inputLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	static XMFLOAT3 DirLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
+
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
 	m_ImmediateContext->Map(m_CBPerFrame.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
+
 	XMStoreFloat3(&m_CBPerFrameData.EyePos, eyePos);
-	m_CBPerFrameData.DirLight.SetDirection(inputLightVector);
+	m_CBPerFrameData.DirLight.SetDirection(DirLightVector);
+
 	memcpy(mappedRes.pData, &m_CBPerFrameData, sizeof(m_CBPerFrameData));
+
 	m_ImmediateContext->Unmap(m_CBPerFrame.Get(), 0);
 
-	if (ImGui::BeginMenu("Directional Light"))
+#pragma region ImGui Widgets
+	if (ImGui::Begin("Scene"))
 	{
-		ImGui::ColorEdit4("Ambient", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Ambient), 2);
-		ImGui::ColorEdit4("Diffuse", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Diffuse), 2);
-		ImGui::ColorEdit3("Specular", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Specular), 2);
-		ImGui::InputFloat3("Direction", reinterpret_cast<float*>(&inputLightVector), 2);
+		if (ImGui::CollapsingHeader("Lights"))
+		{
+			if (ImGui::TreeNode("Directional Light"))
+			{
+				ImGui::ColorEdit4("Ambient##1", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Ambient), 2);
+				ImGui::ColorEdit4("Diffuse##1", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Diffuse), 2);
+				ImGui::ColorEdit3("Specular##1", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Specular), 2);
+				ImGui::InputFloat3("Direction##1", reinterpret_cast<float*>(&DirLightVector), 2);
 
-		ImGui::EndMenu();
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("Point Light"))
+			{
+				ImGui::ColorEdit4("Ambient##2", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Ambient), 2);
+				ImGui::ColorEdit4("Diffuse##2", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Diffuse), 2);
+				ImGui::ColorEdit3("Specular##2", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Specular), 2);
+				ImGui::InputFloat3("Position##1", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Position), 2);
+				ImGui::InputFloat("Range##1", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Range), 2);
+				ImGui::InputFloat3("Attenuation##1", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Attenuation), 2);
+
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("Spot Light"))
+			{
+				ImGui::ColorEdit4("Ambient##5", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Ambient), 2);
+				ImGui::ColorEdit4("Diffuse##5", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Diffuse), 2);
+				ImGui::ColorEdit3("Specular##5", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Specular), 2);
+				ImGui::InputFloat3("Position##2", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Position), 2);
+				ImGui::InputFloat("Range##2", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Range), 2);
+				ImGui::InputFloat("SpotPower", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.SpotPower), 2);
+				ImGui::InputFloat3("Direction##2", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Direction), 2);
+				ImGui::InputFloat3("Attenuation##2", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Attenuation), 2);
+
+				ImGui::TreePop();
+			}
+		}
+
+		if (ImGui::CollapsingHeader("Scene Objects"))
+		{
+			if (ImGui::TreeNode("Sphere"))
+			{
+				ImGui::InputFloat4("Ambient##3", reinterpret_cast<float*>(&m_DrawableSphere->Material.Ambient), 2);
+				ImGui::InputFloat4("Diffuse##3", reinterpret_cast<float*>(&m_DrawableSphere->Material.Diffuse), 2);
+				ImGui::InputFloat4("Specular##3", reinterpret_cast<float*>(&m_DrawableSphere->Material.Specular), 2);
+
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNode("Box"))
+			{
+				ImGui::InputFloat4("Ambient##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Ambient), 2);
+				ImGui::InputFloat4("Diffuse##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Diffuse), 2);
+				ImGui::InputFloat4("Specular##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Specular), 2);
+
+				ImGui::TreePop();
+			}
+		}
+	
+		ImGui::End();
 	}
-
-	if (ImGui::BeginMenu("Point Light"))
-	{
-		ImGui::ColorEdit4("Ambient", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Ambient), 2);
-		ImGui::ColorEdit4("Diffuse", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Diffuse), 2);
-		ImGui::ColorEdit3("Specular", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Specular), 2);
-		ImGui::InputFloat3("Position", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Position), 2);
-		ImGui::InputFloat3("Attenuation", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Attenuation), 2);
-
-		ImGui::EndMenu();
-	}
-
-
-	if (ImGui::BeginMenu("Cylinder Material"))
-	{
-		ImGui::InputFloat4("Ambient", reinterpret_cast<float*>(&m_DrawableCylinder->Material.Ambient), 2);
-		ImGui::InputFloat4("Diffuse", reinterpret_cast<float*>(&m_DrawableCylinder->Material.Diffuse), 2);
-		ImGui::InputFloat4("Specular", reinterpret_cast<float*>(&m_DrawableCylinder->Material.Specular), 2);
-
-		ImGui::EndMenu();
-	}
-
-	if (ImGui::BeginMenu("Cube Material"))
-	{
-		ImGui::InputFloat4("Ambient", reinterpret_cast<float*>(&m_DrawableCube->Material.Ambient), 2);
-		ImGui::InputFloat4("Diffuse", reinterpret_cast<float*>(&m_DrawableCube->Material.Diffuse), 2);
-		ImGui::InputFloat4("Specular", reinterpret_cast<float*>(&m_DrawableCube->Material.Specular), 2);
-
-		ImGui::EndMenu();
-	}
+#pragma endregion
 }
 
 void DemoScene::Clear()
@@ -223,10 +253,10 @@ void DemoScene::DrawScene()
 	UINT offset = 0;
 	
 	//Set Cube transform & Material
-	m_CBPerObjectData.WorldViewProj = m_DrawableCube->WorldViewProjTransform;
-	m_CBPerObjectData.World = m_DrawableCube->WorldTransform;
-	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableCube->WorldTransform);
-	m_CBPerObjectData.Material = m_DrawableCube->Material;
+	m_CBPerObjectData.WorldViewProj = m_DrawableBox->WorldViewProjTransform;
+	m_CBPerObjectData.World = m_DrawableBox->WorldTransform;
+	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableBox->WorldTransform);
+	m_CBPerObjectData.Material = m_DrawableBox->Material;
 	D3D11_MAPPED_SUBRESOURCE mappedRes = {};
 	m_ImmediateContext->Map(m_CBPerObject.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
 	memcpy(mappedRes.pData, &m_CBPerObjectData, sizeof(m_CBPerObjectData));
@@ -234,24 +264,24 @@ void DemoScene::DrawScene()
 	
 	//Draw Cube
 	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCube.GetAddressOf());
-	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableCube->VertexBuffer.GetAddressOf(), &stride, &offset);
-	m_ImmediateContext->IASetIndexBuffer(m_DrawableCube->IndexBuffer.Get(), m_DrawableCube->IndexBufferFormat, 0);
-	m_ImmediateContext->DrawIndexed(m_DrawableCube->IndexCount, 0, 0);
+	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableBox->VertexBuffer.GetAddressOf(), &stride, &offset);
+	m_ImmediateContext->IASetIndexBuffer(m_DrawableBox->IndexBuffer.Get(), m_DrawableBox->IndexBufferFormat, 0);
+	m_ImmediateContext->DrawIndexed(m_DrawableBox->IndexCount, 0, 0);
 
 	//Set Cylinder Transform & Material
-	m_CBPerObjectData.WorldViewProj = m_DrawableCylinder->WorldViewProjTransform;
-	m_CBPerObjectData.World = m_DrawableCylinder->WorldTransform;
-	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableCylinder->WorldTransform);
-	m_CBPerObjectData.Material = m_DrawableCylinder->Material;
+	m_CBPerObjectData.WorldViewProj = m_DrawableSphere->WorldViewProjTransform;
+	m_CBPerObjectData.World = m_DrawableSphere->WorldTransform;
+	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableSphere->WorldTransform);
+	m_CBPerObjectData.Material = m_DrawableSphere->Material;
 	m_ImmediateContext->Map(m_CBPerObject.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
 	memcpy(mappedRes.pData, &m_CBPerObjectData, sizeof(m_CBPerObjectData));
 	m_ImmediateContext->Unmap(m_CBPerObject.Get(), 0); 
 
 	//Draw Cylinder
 	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCylinder.GetAddressOf());
-	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableCylinder->VertexBuffer.GetAddressOf(), &stride, &offset);
-	m_ImmediateContext->IASetIndexBuffer(m_DrawableCylinder->IndexBuffer.Get(), m_DrawableCylinder->IndexBufferFormat, 0);
-	m_ImmediateContext->DrawIndexed(m_DrawableCylinder->IndexCount, 0, 0);
+	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableSphere->VertexBuffer.GetAddressOf(), &stride, &offset);
+	m_ImmediateContext->IASetIndexBuffer(m_DrawableSphere->IndexBuffer.Get(), m_DrawableSphere->IndexBufferFormat, 0);
+	m_ImmediateContext->DrawIndexed(m_DrawableSphere->IndexCount, 0, 0);
 
 
 	ImGui::ShowDemoWindow();

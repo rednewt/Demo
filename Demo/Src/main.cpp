@@ -81,10 +81,10 @@ bool InitializeWindow(HINSTANCE hInstance, HWND& windowHandle)
 {
 	WNDCLASS wc = {};
 
-	const std::wstring WindowClass = L"WindowClass1";
+	const std::wstring windowClass = L"WindowClass1";
 
 	wc.hInstance = hInstance;
-	wc.lpszClassName = WindowClass.c_str();
+	wc.lpszClassName = windowClass.c_str();
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW); 
 	wc.lpfnWndProc = WindowProc;
@@ -95,7 +95,7 @@ bool InitializeWindow(HINSTANCE hInstance, HWND& windowHandle)
 	RECT wr = { 0, 0, g_ClientWidth, g_ClientHeight };
 	AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
 
-	windowHandle = CreateWindow(WindowClass.c_str(), L"Demo",
+	windowHandle = CreateWindow(windowClass.c_str(), L"Demo",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		wr.right - wr.left, wr.bottom - wr.top,
@@ -112,17 +112,17 @@ bool InitializeWindow(HINSTANCE hInstance, HWND& windowHandle)
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam))
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
 		return true;
 
-	switch (Msg)
+	switch (msg)
 	{
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
 	}
 
-	return DefWindowProc(hWnd, Msg, wParam, lParam);
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }

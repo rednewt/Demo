@@ -17,6 +17,7 @@ namespace
 	{
 		DirectionalLight DirLight;
 		PointLight PointLight;
+		SpotLight SpotLight;
 		DirectX::XMFLOAT3 EyePos;
 		float pad;
 	};
@@ -86,8 +87,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_SimplePixelShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_SimpleVertexLayout;
 
-	std::unique_ptr<Drawable> m_DrawableCube;
-	std::unique_ptr<Drawable> m_DrawableCylinder;
+	std::unique_ptr<Drawable> m_DrawableBox;
+	std::unique_ptr<Drawable> m_DrawableSphere;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CBPerObject;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CBPerFrame;
