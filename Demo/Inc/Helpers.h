@@ -2,6 +2,18 @@
 
 #include <DirectXMath.h>
 
+
+namespace DX
+{
+	inline void ThrowIfFailed(HRESULT hr)
+	{
+		if (FAILED(hr))
+		{
+			throw std::exception();
+		}
+	}
+}
+  
 namespace Helpers
 {
 	static DirectX::XMMATRIX ComputeInverseTranspose(DirectX::FXMMATRIX matrix)
@@ -21,5 +33,16 @@ namespace Helpers
 		DirectX::XMStoreFloat4x4(&f, m);
 		
 		return f;
+	}
+
+	template<typename T>
+	static void UpdateConstantBuffer(ID3D11DeviceContext* const ctx, ID3D11Buffer* const cbuffer, T* const newData)
+	{
+		assert(ctx != nullptr);
+
+		D3D11_MAPPED_SUBRESOURCE mappedRes;
+		DX::ThrowIfFailed(ctx->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes));
+		memcpy(mappedRes.pData, newData, sizeof(T));
+		ctx->Unmap(cbuffer, 0);
 	}
 };

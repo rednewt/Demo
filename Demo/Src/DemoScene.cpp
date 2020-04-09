@@ -3,13 +3,17 @@
 #include <DDSTextureLoader.h>
 #include <WICTextureLoader.h>
 #include <GeometricPrimitive.h>
-//These headers may not be present, so you may need to build the project first
-#include "Shaders\Compiled\BasicShaderPS.h"
-#include "Shaders\Compiled\BasicShaderVS.h"
-
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
+
+//These headers may not be present, so you may need to build the project first
+namespace
+{
+	#include "Shaders\Compiled\BasicShaderPS.h"
+	#include "Shaders\Compiled\BasicShaderVS.h"
+}
+
 
 using namespace DirectX;
 
@@ -128,7 +132,9 @@ void DemoScene::UpdateScene(float dt)
 	ImGui_NewFrame();
 
 	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 0.1f, 200.0f);
+	
 	XMVECTOR eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+	XMStoreFloat3(&m_CBPerFrameData.EyePos, eyePos);
 
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMVECTOR focus = XMVectorSet(0, 0, 0, 1);
@@ -152,18 +158,12 @@ void DemoScene::UpdateScene(float dt)
 	XMStoreFloat4x4(&m_DrawableSphere->WorldViewProjTransform, WVPCylinder);
 	
 
+	//DirLightVector is updated by ImGui widget
 	static XMFLOAT3 DirLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
-
-	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	m_ImmediateContext->Map(m_CBPerFrame.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
-
-	XMStoreFloat3(&m_CBPerFrameData.EyePos, eyePos);
+	//Normalize the vector before sending to shader
 	m_CBPerFrameData.DirLight.SetDirection(DirLightVector);
 
-	memcpy(mappedRes.pData, &m_CBPerFrameData, sizeof(m_CBPerFrameData));
-
-	m_ImmediateContext->Unmap(m_CBPerFrame.Get(), 0);
-
+	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CBPerFrame.Get(), &m_CBPerFrameData);
 #pragma region ImGui Widgets
 	if (ImGui::Begin("Scene"))
 	{
@@ -257,11 +257,8 @@ void DemoScene::DrawScene()
 	m_CBPerObjectData.World = m_DrawableBox->WorldTransform;
 	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableBox->WorldTransform);
 	m_CBPerObjectData.Material = m_DrawableBox->Material;
-	D3D11_MAPPED_SUBRESOURCE mappedRes = {};
-	m_ImmediateContext->Map(m_CBPerObject.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
-	memcpy(mappedRes.pData, &m_CBPerObjectData, sizeof(m_CBPerObjectData));
-	m_ImmediateContext->Unmap(m_CBPerObject.Get(), 0);
-	
+	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CBPerObject.Get(), &m_CBPerObjectData);
+
 	//Draw Cube
 	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCube.GetAddressOf());
 	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableBox->VertexBuffer.GetAddressOf(), &stride, &offset);
@@ -273,9 +270,7 @@ void DemoScene::DrawScene()
 	m_CBPerObjectData.World = m_DrawableSphere->WorldTransform;
 	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableSphere->WorldTransform);
 	m_CBPerObjectData.Material = m_DrawableSphere->Material;
-	m_ImmediateContext->Map(m_CBPerObject.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes);
-	memcpy(mappedRes.pData, &m_CBPerObjectData, sizeof(m_CBPerObjectData));
-	m_ImmediateContext->Unmap(m_CBPerObject.Get(), 0); 
+	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CBPerObject.Get(), &m_CBPerObjectData);
 
 	//Draw Cylinder
 	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCylinder.GetAddressOf());

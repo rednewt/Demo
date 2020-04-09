@@ -41,7 +41,7 @@ float4 main(VertexOut pin) : SV_TARGET
     }
     
     float4 SampleColor = DiffuseMap.Sample(Sampler, pin.Tex);
-    float4 final = saturate(SampleColor * (result.Ambient + result.Diffuse) + result.Specular);
+    float4 final = SampleColor * (result.Ambient + result.Diffuse) + result.Specular;
     
     return final;
 }

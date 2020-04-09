@@ -38,7 +38,7 @@ void DemoBase::Init_ImGui()
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
+	ImGui::StyleColorsClassic();
 	ImGui_ImplWin32_Init(m_MainWindow);
 	ImGui_ImplDX11_Init(m_Device.Get(), m_ImmediateContext.Get());
 }
