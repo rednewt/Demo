@@ -7,29 +7,28 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 
-//These headers may not be present, so you may need to build the project first
+//These headers may not be present, so you may need to build the project once
 namespace
 {
 	#include "Shaders\Compiled\BasicShaderPS.h"
 	#include "Shaders\Compiled\BasicShaderVS.h"
 }
 
-
 using namespace DirectX;
 
 DemoScene::DemoScene(const HWND& hwnd) :
 	Super(hwnd)
 {
-	m_CBPerObjectData = {};
-	m_CBPerFrameData = {};
+	m_CbPerObjectData = {};
+	m_CbPerFrameData = {};
 
 	//Setup DirectionalLight
-	m_CBPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	m_CbPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
 	//Setup Pointlight
-	m_CBPerFrameData.PointLight.Position = XMFLOAT3(1.0f, 2.0f, 0.0f);
+	m_CbPerFrameData.PointLight.Position = XMFLOAT3(1.0f, 2.0f, 0.0f);
 	//Setup Spotlight
-	m_CBPerFrameData.SpotLight.Position = XMFLOAT3(0.0f, 0.0f, -3.0f);
-	m_CBPerFrameData.SpotLight.Direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	m_CbPerFrameData.SpotLight.Position = XMFLOAT3(0.0f, 0.0f, -3.0f);
+	m_CbPerFrameData.SpotLight.Direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
 
 	m_DrawableBox = std::make_unique<Drawable>();
 	m_DrawableSphere = std::make_unique<Drawable>();
@@ -52,10 +51,10 @@ bool DemoScene::CreateDeviceDependentResources()
 	if FAILED(m_Device->CreatePixelShader(g_PSBasicShader, sizeof(g_PSBasicShader), nullptr, m_SimplePixelShader.ReleaseAndGetAddressOf()))
 		return false;
 
-	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\crate.dds", 0, m_SRVCube.ReleaseAndGetAddressOf()))
+	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\crate.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 
-	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\metal.jpg", 0, m_SRVCylinder.ReleaseAndGetAddressOf()))
+	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\metal.jpg", 0, m_DrawableSphere->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 
 	if (!CreateBuffers())
@@ -90,9 +89,9 @@ bool DemoScene::CreateBuffers()
 	cbDesc.ByteWidth = sizeof(VS_PS_ConstantBufferPerObject);
 
 	D3D11_SUBRESOURCE_DATA cbData = {};
-	cbData.pSysMem = &m_CBPerObjectData;
+	cbData.pSysMem = &m_CbPerObjectData;
 
-	if (FAILED(m_Device->CreateBuffer(&cbDesc, &cbData, m_CBPerObject.ReleaseAndGetAddressOf())))
+	if (FAILED(m_Device->CreateBuffer(&cbDesc, &cbData, m_CbPerObject.ReleaseAndGetAddressOf())))
 		return false;
 
 	cbDesc = {};
@@ -102,9 +101,9 @@ bool DemoScene::CreateBuffers()
 	cbDesc.ByteWidth = sizeof(PS_ConstantBufferPerFrame);
 
 	cbData = {};
-	cbData.pSysMem = &m_CBPerFrameData;
+	cbData.pSysMem = &m_CbPerFrameData;
 
-	if (FAILED(m_Device->CreateBuffer(&cbDesc, &cbData, m_CBPerFrame.ReleaseAndGetAddressOf())))
+	if (FAILED(m_Device->CreateBuffer(&cbDesc, &cbData, m_CbPerFrame.ReleaseAndGetAddressOf())))
 		return false;
 
 
@@ -134,7 +133,6 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 0.1f, 200.0f);
 	
 	XMVECTOR eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
-	XMStoreFloat3(&m_CBPerFrameData.EyePos, eyePos);
 
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMVECTOR focus = XMVectorSet(0, 0, 0, 1);
@@ -142,13 +140,13 @@ void DemoScene::UpdateScene(float dt)
 	
 	static float angle = 0.0f;
 	angle += 45.0f * dt;
-
+	
+	XMMATRIX viewProj = view * proj;
 	XMMATRIX RotateY = XMMatrixRotationY(XMConvertToRadians(angle));
 
 	XMMATRIX worldCube = RotateY * XMMatrixTranslation(-2, 0, 0);
 	XMMATRIX worldCylinder = RotateY * XMMatrixTranslation(2, 0, 0);
 	
-	XMMATRIX viewProj = view * proj;
 	XMMATRIX WVPCube = worldCube * viewProj;
 	XMMATRIX WVPCylinder = worldCylinder * viewProj;
 
@@ -160,10 +158,12 @@ void DemoScene::UpdateScene(float dt)
 
 	//DirLightVector is updated by ImGui widget
 	static XMFLOAT3 DirLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
-	//Normalize the vector before sending to shader
-	m_CBPerFrameData.DirLight.SetDirection(DirLightVector);
+	//SetDirection method will normalize the vector before setting it
+	m_CbPerFrameData.DirLight.SetDirection(DirLightVector);
 
-	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CBPerFrame.Get(), &m_CBPerFrameData);
+	XMStoreFloat3(&m_CbPerFrameData.EyePos, eyePos);
+
+	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &m_CbPerFrameData);
 #pragma region ImGui Widgets
 	if (ImGui::Begin("Scene"))
 	{
@@ -171,9 +171,9 @@ void DemoScene::UpdateScene(float dt)
 		{
 			if (ImGui::TreeNode("Directional Light"))
 			{
-				ImGui::ColorEdit4("Ambient##1", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Ambient), 2);
-				ImGui::ColorEdit4("Diffuse##1", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Diffuse), 2);
-				ImGui::ColorEdit3("Specular##1", reinterpret_cast<float*>(&m_CBPerFrameData.DirLight.Specular), 2);
+				ImGui::ColorEdit4("Ambient##1", reinterpret_cast<float*>(&m_CbPerFrameData.DirLight.Ambient), 2);
+				ImGui::ColorEdit4("Diffuse##1", reinterpret_cast<float*>(&m_CbPerFrameData.DirLight.Diffuse), 2);
+				ImGui::ColorEdit3("Specular##1", reinterpret_cast<float*>(&m_CbPerFrameData.DirLight.Specular), 2);
 				ImGui::InputFloat3("Direction##1", reinterpret_cast<float*>(&DirLightVector), 2);
 
 				ImGui::TreePop();
@@ -181,26 +181,26 @@ void DemoScene::UpdateScene(float dt)
 
 			if (ImGui::TreeNode("Point Light"))
 			{
-				ImGui::ColorEdit4("Ambient##2", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Ambient), 2);
-				ImGui::ColorEdit4("Diffuse##2", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Diffuse), 2);
-				ImGui::ColorEdit3("Specular##2", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Specular), 2);
-				ImGui::InputFloat3("Position##1", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Position), 2);
-				ImGui::InputFloat("Range##1", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Range), 2);
-				ImGui::InputFloat3("Attenuation##1", reinterpret_cast<float*>(&m_CBPerFrameData.PointLight.Attenuation), 2);
+				ImGui::ColorEdit4("Ambient##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Ambient), 2);
+				ImGui::ColorEdit4("Diffuse##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Diffuse), 2);
+				ImGui::ColorEdit3("Specular##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Specular), 2);
+				ImGui::InputFloat3("Position##1", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Position), 2);
+				ImGui::InputFloat("Range##1", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Range), 2);
+				ImGui::InputFloat3("Attenuation##1", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Attenuation), 2);
 
 				ImGui::TreePop();
 			}
 
 			if (ImGui::TreeNode("Spot Light"))
 			{
-				ImGui::ColorEdit4("Ambient##5", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Ambient), 2);
-				ImGui::ColorEdit4("Diffuse##5", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Diffuse), 2);
-				ImGui::ColorEdit3("Specular##5", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Specular), 2);
-				ImGui::InputFloat3("Position##2", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Position), 2);
-				ImGui::InputFloat("Range##2", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Range), 2);
-				ImGui::InputFloat("SpotPower", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.SpotPower), 2);
-				ImGui::InputFloat3("Direction##2", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Direction), 2);
-				ImGui::InputFloat3("Attenuation##2", reinterpret_cast<float*>(&m_CBPerFrameData.SpotLight.Attenuation), 2);
+				ImGui::ColorEdit4("Ambient##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Ambient), 2);
+				ImGui::ColorEdit4("Diffuse##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Diffuse), 2);
+				ImGui::ColorEdit3("Specular##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Specular), 2);
+				ImGui::InputFloat3("Position##2", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Position), 2);
+				ImGui::InputFloat("Range##2", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Range), 2);
+				ImGui::InputFloat("SpotPower", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.SpotPower), 2);
+				ImGui::InputFloat3("Direction##2", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Direction), 2);
+				ImGui::InputFloat3("Attenuation##2", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Attenuation), 2);
 
 				ImGui::TreePop();
 			}
@@ -243,42 +243,32 @@ void DemoScene::DrawScene()
 {
 	Clear();
 
-	//Set CBPerObject for VS & PS
-	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CBPerObject.GetAddressOf());
-	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CBPerObject.GetAddressOf());
-	//Set CBPerFrame for PS
-	m_ImmediateContext->PSSetConstantBuffers(1, 1, m_CBPerFrame.GetAddressOf());
+	//Set CbPerObject for VS & PS
+	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
+	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
+	//Set CbPerFrame for PS
+	m_ImmediateContext->PSSetConstantBuffers(1, 1, m_CbPerFrame.GetAddressOf());
 
 	UINT stride = sizeof(GeometricPrimitive::VertexType);
 	UINT offset = 0;
+
+	static Drawable* drawables[] = { m_DrawableBox.get(), m_DrawableSphere.get() };
+
+	for (auto const& object : drawables)
+	{
+		m_CbPerObjectData.WorldViewProj = object->WorldViewProjTransform;
+		m_CbPerObjectData.World = object->WorldTransform;
+		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(object->WorldTransform);
+		m_CbPerObjectData.Material = object->Material;
+		Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerObject.Get(), &m_CbPerObjectData);
+
+		m_ImmediateContext->PSSetShaderResources(0, 1, object->TextureSRV.GetAddressOf());
+		m_ImmediateContext->IASetVertexBuffers(0, 1, object->VertexBuffer.GetAddressOf(), &stride, &offset);
+		m_ImmediateContext->IASetIndexBuffer(object->IndexBuffer.Get(), object->IndexBufferFormat, 0);
+		m_ImmediateContext->DrawIndexed(object->IndexCount, 0, 0);
+
+	}
 	
-	//Set Cube transform & Material
-	m_CBPerObjectData.WorldViewProj = m_DrawableBox->WorldViewProjTransform;
-	m_CBPerObjectData.World = m_DrawableBox->WorldTransform;
-	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableBox->WorldTransform);
-	m_CBPerObjectData.Material = m_DrawableBox->Material;
-	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CBPerObject.Get(), &m_CBPerObjectData);
-
-	//Draw Cube
-	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCube.GetAddressOf());
-	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableBox->VertexBuffer.GetAddressOf(), &stride, &offset);
-	m_ImmediateContext->IASetIndexBuffer(m_DrawableBox->IndexBuffer.Get(), m_DrawableBox->IndexBufferFormat, 0);
-	m_ImmediateContext->DrawIndexed(m_DrawableBox->IndexCount, 0, 0);
-
-	//Set Cylinder Transform & Material
-	m_CBPerObjectData.WorldViewProj = m_DrawableSphere->WorldViewProjTransform;
-	m_CBPerObjectData.World = m_DrawableSphere->WorldTransform;
-	m_CBPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableSphere->WorldTransform);
-	m_CBPerObjectData.Material = m_DrawableSphere->Material;
-	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CBPerObject.Get(), &m_CBPerObjectData);
-
-	//Draw Cylinder
-	m_ImmediateContext->PSSetShaderResources(0, 1, m_SRVCylinder.GetAddressOf());
-	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableSphere->VertexBuffer.GetAddressOf(), &stride, &offset);
-	m_ImmediateContext->IASetIndexBuffer(m_DrawableSphere->IndexBuffer.Get(), m_DrawableSphere->IndexBufferFormat, 0);
-	m_ImmediateContext->DrawIndexed(m_DrawableSphere->IndexCount, 0, 0);
-
-
 	ImGui::ShowDemoWindow();
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());

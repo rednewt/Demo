@@ -69,6 +69,7 @@ struct Drawable
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> VertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> IndexBuffer;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> TextureSRV;
 	uint32_t IndexCount;
 	uint32_t VertexCount;
 	DXGI_FORMAT IndexBufferFormat;
@@ -90,27 +91,22 @@ private:
 	std::unique_ptr<Drawable> m_DrawableBox;
 	std::unique_ptr<Drawable> m_DrawableSphere;
 
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CBPerObject;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CBPerFrame;
-
-	VS_PS_ConstantBufferPerObject m_CBPerObjectData;
-	PS_ConstantBufferPerFrame m_CBPerFrameData;
-
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_SRVCube;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_SRVCylinder;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerObject;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerFrame;
+	VS_PS_ConstantBufferPerObject m_CbPerObjectData;
+	PS_ConstantBufferPerFrame m_CbPerFrameData;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerDefault;
 
 public:
 	explicit DemoScene(const HWND& hwnd);
+	DemoScene(const DemoScene&) = delete;
 	~DemoScene() = default;
 
 	bool Initialize() override;
 	void UpdateScene(float dt) override;
 	void DrawScene() override;
 private:
-	DemoScene(const DemoScene&) = default;
-
 	void Clear();
 	bool CreateDeviceDependentResources();
 	bool CreateBuffers();
