@@ -22,22 +22,26 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_CbPerObjectData = {};
 	m_CbPerFrameData = {};
 
-	//Setup DirectionalLight
-	m_CbPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
-	//Setup Pointlight
-	m_CbPerFrameData.PointLight.Position = XMFLOAT3(0.0f, 3.0f, 0.0f);
-	//Setup Spotlight
-	m_CbPerFrameData.SpotLight.Position = XMFLOAT3(0.0f, 0.0f, -3.0f);
-	m_CbPerFrameData.SpotLight.Direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
-
 	m_DrawableBox = std::make_unique<Drawable>();
 	m_DrawableSphere = std::make_unique<Drawable>();
 	m_DrawableTorus = std::make_unique<Drawable>();
 	m_DrawableTeapot = std::make_unique<Drawable>();
 
-	m_DrawableBox->Material.Ambient = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
+	//Setup DirectionalLight
+	m_CbPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	//Setup Pointlight
+	m_CbPerFrameData.PointLight.Position = XMFLOAT3(0.0f, 2.0f, -2.0f);
+	//Setup Spotlight
+	m_CbPerFrameData.SpotLight.Position = XMFLOAT3(2.0f, -2.0f, -7.0f);
+	m_CbPerFrameData.SpotLight.Direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	m_CbPerFrameData.SpotLight.SpotPower = 2.0f;
+
+	//Setup Materials
+	m_DrawableBox->Material.Ambient = XMFLOAT4(0.35f, 0.35f, 0.35f, 1.0f);
 	m_DrawableSphere->Material.Ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
+	m_DrawableTorus->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
+	m_DrawableTorus->Material.Ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.1f);
 }
 
 bool DemoScene::CreateDeviceDependentResources()
@@ -90,11 +94,11 @@ bool DemoScene::CreateBuffers()
 
 	GeometricPrimitive::CreateSphere(vertices, indices, 3.0f, 32, false);
 	m_DrawableSphere->Create(m_Device.Get(), vertices, indices);
-	GeometricPrimitive::CreateBox(vertices, indices, XMFLOAT3(3.0f, 3.0f, 3.0f), false);
+	GeometricPrimitive::CreateBox(vertices, indices, XMFLOAT3(2.5f, 2.5f, 2.5f), false);
 	m_DrawableBox->Create(m_Device.Get(), vertices, indices);
 	GeometricPrimitive::CreateTorus(vertices, indices, 3.0f, 1.0f, 64, false);
 	m_DrawableTorus->Create(m_Device.Get(), vertices, indices);
-	GeometricPrimitive::CreateSphere(vertices, indices, 4.0f, 32, false);
+	GeometricPrimitive::CreateTeapot(vertices, indices, 3.0f, 32, false);
 	m_DrawableTeapot->Create(m_Device.Get(), vertices, indices);
 
 	D3D11_BUFFER_DESC cbDesc = {};
@@ -146,12 +150,13 @@ void DemoScene::UpdateScene(float dt)
 {
 	ImGui_NewFrame();
 
+	XMVECTOR eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+	//build projection matrix
 	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 1.0f, 20.0f);
 	
-	XMVECTOR eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
-
 	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMVECTOR focus = XMVectorSet(0, 0, 0, 1);
+	//build view matrix
 	XMMATRIX view = XMMatrixLookAtLH(eyePos, focus, up);
 	
 	static float angle = 0.0f;
@@ -160,10 +165,11 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX viewProj = view * proj;
 	XMMATRIX RotateY = XMMatrixRotationY(XMConvertToRadians(angle));
 	XMMATRIX RotateX = XMMatrixRotationX(XMConvertToRadians(angle));
+	XMMATRIX RotateZ = XMMatrixRotationZ(XMConvertToRadians(angle));
 
 	XMMATRIX worldBox = RotateY * XMMatrixTranslation(-2, -2, 0);
 	XMMATRIX worldSphere = RotateY * XMMatrixTranslation(3.5f, -2, 0);
-	XMMATRIX worldTorus = RotateX * XMMatrixRotationX(XMConvertToRadians(45.0f)) * XMMatrixTranslation(-2, 2, 2);
+	XMMATRIX worldTorus = RotateZ * RotateX * XMMatrixTranslation(-2, 2, 2);
 	XMMATRIX worldTeapot = RotateY * XMMatrixTranslation(4, 2, 2);
 
 	XMMATRIX WVPCube = worldBox * viewProj;
@@ -176,6 +182,7 @@ void DemoScene::UpdateScene(float dt)
 
 	XMStoreFloat4x4(&m_DrawableSphere->WorldTransform, worldSphere);
 	XMStoreFloat4x4(&m_DrawableSphere->WorldViewProjTransform, WVPSphere);
+	XMStoreFloat4x4(&m_DrawableSphere->TextureTransform, XMMatrixScaling(2.0f, 2.0f, 0.0f));
 
 	XMStoreFloat4x4(&m_DrawableTorus->WorldTransform, worldTorus);
 	XMStoreFloat4x4(&m_DrawableTorus->WorldViewProjTransform, WVPTorus);
@@ -204,6 +211,28 @@ void DemoScene::UpdateScene(float dt)
 	{
 		if (ImGui::TreeNode("Directional Light"))
 		{
+			static bool isActive = true;
+			static XMFLOAT3 oldDirection;
+			static XMFLOAT4 oldAmbient;
+			if (ImGui::Checkbox("Is Active##1", &isActive))
+			{
+				if (!isActive)
+				{
+					oldDirection = DirLightVector;
+					oldAmbient = m_CbPerFrameData.DirLight.Ambient;
+
+					//setting DirLightVector to zero-vector only zeros out diffuse & specular
+					DirLightVector = XMFLOAT3(0.0f, 0.0f, 0.0f); 
+					//we still need to zero out ambient manually
+					m_CbPerFrameData.DirLight.Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+				}
+				else
+				{
+					m_CbPerFrameData.DirLight.Ambient = oldAmbient;
+					DirLightVector = oldDirection;
+				}
+			}
+
 			ImGui::ColorEdit4("Ambient##1", reinterpret_cast<float*>(&m_CbPerFrameData.DirLight.Ambient), 2);
 			ImGui::ColorEdit4("Diffuse##1", reinterpret_cast<float*>(&m_CbPerFrameData.DirLight.Diffuse), 2);
 			ImGui::ColorEdit3("Specular##1", reinterpret_cast<float*>(&m_CbPerFrameData.DirLight.Specular), 2);
@@ -214,6 +243,19 @@ void DemoScene::UpdateScene(float dt)
 
 		if (ImGui::TreeNode("Point Light"))
 		{
+			static bool isActive = true;
+			static float oldValue;
+			if (ImGui::Checkbox("Is Active##2", &isActive))
+			{
+				if (!isActive)
+				{
+					oldValue = m_CbPerFrameData.PointLight.Range;
+					m_CbPerFrameData.PointLight.Range = 0;
+				}
+				else
+					m_CbPerFrameData.PointLight.Range = oldValue;
+			}
+
 			ImGui::ColorEdit4("Ambient##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Ambient), 2);
 			ImGui::ColorEdit4("Diffuse##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Diffuse), 2);
 			ImGui::ColorEdit3("Specular##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Specular), 2);
@@ -221,11 +263,25 @@ void DemoScene::UpdateScene(float dt)
 			ImGui::InputFloat("Range##1", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Range), 2);
 			ImGui::InputFloat3("Attenuation##1", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Attenuation), 2);
 
+
 			ImGui::TreePop();
 		}
 
 		if (ImGui::TreeNode("Spot Light"))
 		{
+			static bool isActive = true;
+			static float oldValue;
+			if (ImGui::Checkbox("Is Active##3", &isActive))
+			{
+				if (!isActive)
+				{
+					oldValue = m_CbPerFrameData.SpotLight.Range;
+					m_CbPerFrameData.SpotLight.Range = 0;
+				}
+				else
+					m_CbPerFrameData.SpotLight.Range = oldValue;
+			}
+
 			ImGui::ColorEdit4("Ambient##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Ambient), 2);
 			ImGui::ColorEdit4("Diffuse##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Diffuse), 2);
 			ImGui::ColorEdit3("Specular##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Specular), 2);
@@ -255,6 +311,26 @@ void DemoScene::UpdateScene(float dt)
 			ImGui::InputFloat4("Ambient##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Ambient), 2);
 			ImGui::InputFloat4("Diffuse##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Diffuse), 2);
 			ImGui::InputFloat4("Specular##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Specular), 2);
+
+			ImGui::TreePop();
+		}
+
+
+		if (ImGui::TreeNode("Torus"))
+		{
+			ImGui::InputFloat4("Ambient##5", reinterpret_cast<float*>(&m_DrawableTorus->Material.Ambient), 2);
+			ImGui::InputFloat4("Diffuse##5", reinterpret_cast<float*>(&m_DrawableTorus->Material.Diffuse), 2);
+			ImGui::InputFloat4("Specular##5", reinterpret_cast<float*>(&m_DrawableTorus->Material.Specular), 2);
+
+			ImGui::TreePop();
+		}
+
+
+		if (ImGui::TreeNode("Teapot"))
+		{
+			ImGui::InputFloat4("Ambient##6", reinterpret_cast<float*>(&m_DrawableTeapot->Material.Ambient), 2);
+			ImGui::InputFloat4("Diffuse##6", reinterpret_cast<float*>(&m_DrawableTeapot->Material.Diffuse), 2);
+			ImGui::InputFloat4("Specular##6", reinterpret_cast<float*>(&m_DrawableTeapot->Material.Specular), 2);
 
 			ImGui::TreePop();
 		}
