@@ -28,6 +28,7 @@ protected:
 
 	DXGI_FORMAT m_BackBufferFormat;
 	DXGI_FORMAT m_DepthStencilBufferFormat;
+	DXGI_FORMAT m_DepthStencilViewFormat;
 public:
 	DemoBase(const HWND& hwnd);
 	virtual ~DemoBase();

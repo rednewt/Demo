@@ -58,6 +58,7 @@ cbuffer cbPerObject : register(b0)
     row_major float4x4 gWorldViewProj;
     row_major float4x4 gWorld;
     row_major float4x4 gWorldInverseTranspose;
+    row_major float4x4 gTextureTransform;
     Material gMaterial;
 };
 

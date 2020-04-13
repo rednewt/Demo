@@ -12,7 +12,8 @@ DemoBase::DemoBase(const HWND& hwnd) :
 	m_MSAAQuality(0),
 	M_MSAASampleCount(4),
 	m_BackBufferFormat(DXGI_FORMAT_R8G8B8A8_UNORM),
-	m_DepthStencilBufferFormat(DXGI_FORMAT_D24_UNORM_S8_UINT)
+	m_DepthStencilBufferFormat(DXGI_FORMAT_D24_UNORM_S8_UINT),
+	m_DepthStencilViewFormat(DXGI_FORMAT_D24_UNORM_S8_UINT)
 {
 	assert(hwnd != nullptr);
 	 
@@ -20,7 +21,6 @@ DemoBase::DemoBase(const HWND& hwnd) :
 	
 	RECT rect;
 	GetClientRect(hwnd, &rect);
-	
 	m_ClientWidth = rect.right - rect.left;
 	m_ClientHeight = rect.bottom - rect.top;
 }
@@ -38,7 +38,7 @@ void DemoBase::Init_ImGui()
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	// Setup Dear ImGui style
-	ImGui::StyleColorsClassic();
+	ImGui::StyleColorsDark();
 	ImGui_ImplWin32_Init(m_MainWindow);
 	ImGui_ImplDX11_Init(m_Device.Get(), m_ImmediateContext.Get());
 }
@@ -88,14 +88,11 @@ bool DemoBase::Initialize()
 	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 
-	//Use MSAA
 	DX::ThrowIfFailed(m_Device->CheckMultisampleQualityLevels(m_BackBufferFormat, M_MSAASampleCount, &m_MSAAQuality));
-
 	assert(m_MSAAQuality > 0);
 
 	sd.SampleDesc.Count = M_MSAASampleCount;
 	sd.SampleDesc.Quality = m_MSAAQuality - 1;
-
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 	sd.BufferCount = 1;
 	sd.OutputWindow = m_MainWindow;
@@ -117,10 +114,6 @@ bool DemoBase::Initialize()
 
 	if FAILED(dxgiFactory->CreateSwapChain(m_Device.Get(), &sd, m_SwapChain.ReleaseAndGetAddressOf()))
 		return false;
-	
-	dxgiDevice.Reset();
-	dxgiAdapter.Reset();
-	dxgiFactory.Reset();
 	
 	OnResize();
 
@@ -154,9 +147,15 @@ void DemoBase::OnResize()
 	depthStencilDesc.MiscFlags = 0;
 
 	DX::ThrowIfFailed(m_Device->CreateTexture2D(&depthStencilDesc, 0, m_DepthStencilBuffer.ReleaseAndGetAddressOf()));
-	DX::ThrowIfFailed(m_Device->CreateDepthStencilView(m_DepthStencilBuffer.Get(), 0, m_DepthStencilView.ReleaseAndGetAddressOf()));
 
-	
+
+	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc = CD3D11_DEPTH_STENCIL_VIEW_DESC(
+		m_DepthStencilBuffer.Get(), 
+		M_MSAASampleCount > 1 ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D, 
+		m_DepthStencilViewFormat);
+
+	DX::ThrowIfFailed(m_Device->CreateDepthStencilView(m_DepthStencilBuffer.Get(), &depthStencilViewDesc, m_DepthStencilView.ReleaseAndGetAddressOf()));
+
 	m_ImmediateContext->OMSetRenderTargets(1, m_RenderTargetView.GetAddressOf(), m_DepthStencilView.Get());
 
 	m_ScreenViewport.TopLeftX = 0.0f;

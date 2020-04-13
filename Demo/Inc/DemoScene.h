@@ -10,6 +10,7 @@ namespace
 		DirectX::XMFLOAT4X4 WorldViewProj;
 		DirectX::XMFLOAT4X4 World;
 		DirectX::XMFLOAT4X4 WorldInvTranspose;
+		DirectX::XMFLOAT4X4 TextureTransform;
 		Material Material;
 	};
 
@@ -32,6 +33,7 @@ struct Drawable
 	{
 		XMStoreFloat4x4(&WorldViewProjTransform, DirectX::XMMatrixIdentity());
 		XMStoreFloat4x4(&WorldTransform, DirectX::XMMatrixIdentity());
+		XMStoreFloat4x4(&TextureTransform, DirectX::XMMatrixIdentity());
 	}
 
 	template<typename VertexType, typename IndexType>
@@ -75,6 +77,7 @@ struct Drawable
 	DXGI_FORMAT IndexBufferFormat;
 	DirectX::XMFLOAT4X4 WorldViewProjTransform;
 	DirectX::XMFLOAT4X4 WorldTransform;
+	DirectX::XMFLOAT4X4 TextureTransform;
 	Material Material;
 };
 
@@ -90,13 +93,15 @@ private:
 
 	std::unique_ptr<Drawable> m_DrawableBox;
 	std::unique_ptr<Drawable> m_DrawableSphere;
+	std::unique_ptr<Drawable> m_DrawableTorus;
+	std::unique_ptr<Drawable> m_DrawableTeapot;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerObject;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerFrame;
 	VS_PS_ConstantBufferPerObject m_CbPerObjectData;
 	PS_ConstantBufferPerFrame m_CbPerFrameData;
 
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerDefault;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 
 public:
 	explicit DemoScene(const HWND& hwnd);

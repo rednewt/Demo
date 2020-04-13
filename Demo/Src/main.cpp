@@ -8,8 +8,8 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 bool InitializeWindow(HINSTANCE hInstance, HWND& outWindowHandle);
 
-constexpr auto g_ClientWidth = 1280;
-constexpr auto g_ClientHeight = 720;
+constexpr auto g_ClientWidth = 1600;
+constexpr auto g_ClientHeight = 900;
 
 
 INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
@@ -17,6 +17,7 @@ INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 	_In_ LPWSTR lpCmdLine,
 	_In_ int nShowCmd)
 {
+
 
 #if defined(DEBUG) | defined(_DEBUG)
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);

@@ -15,7 +15,7 @@ VertexOut main( VertexIn vin )
     vout.PosW = mul(float4(vin.PosL, 1.0f), gWorld).xyz;  
     vout.PosH = mul(float4(vin.PosL, 1.0f), gWorldViewProj);
     vout.NormalW = mul(vin.NormalL, (float3x3) gWorldInverseTranspose);
-    vout.Tex = vin.Tex;
+    vout.Tex = mul(float4(vin.Tex, 0.0f, 1.0f), gTextureTransform).xy;
     
     return vout;
 }

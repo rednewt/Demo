@@ -25,7 +25,7 @@ struct PointLight
 		Position = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 		Attenuation = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
 
-		Ambient = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+		Ambient = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
 		Diffuse = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		Specular = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	}
@@ -47,7 +47,7 @@ struct SpotLight
 		Range(100.0f),
 		SpotPower(32.0f)
 	{
-		Ambient = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f);
+		Ambient = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
 		Diffuse = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 		Specular = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
