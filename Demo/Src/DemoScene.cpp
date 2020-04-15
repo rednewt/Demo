@@ -7,6 +7,8 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 
+
+
 //These headers may not be present, so you may need to build the project once
 namespace
 {
@@ -46,9 +48,7 @@ DemoScene::DemoScene(const HWND& hwnd) :
 
 bool DemoScene::CreateDeviceDependentResources()
 {
-	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, 
-		GeometricPrimitive::VertexType::InputElementCount, 
-		g_VSBasicShader, sizeof(g_VSBasicShader), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount, g_VSBasicShader, sizeof(g_VSBasicShader), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
 		return false;
 
 	if FAILED(m_Device->CreateVertexShader(g_VSBasicShader, sizeof(g_VSBasicShader), nullptr, m_SimpleVertexShader.ReleaseAndGetAddressOf()))
@@ -68,65 +68,46 @@ bool DemoScene::CreateDeviceDependentResources()
 
 	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\flooring.png", 0, m_DrawableTeapot->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
-
-	if (!CreateBuffers())
-		return false;
 	
 	CD3D11_DEFAULT def;
-	CD3D11_SAMPLER_DESC desc(def);
+	{
+		CD3D11_SAMPLER_DESC desc(def);
+		desc.Filter = D3D11_FILTER_ANISOTROPIC;
+		desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.MaxAnisotropy = 8;
 
-	desc.Filter = D3D11_FILTER_ANISOTROPIC;
-	desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	desc.MaxAnisotropy = 8;
-	
-	if FAILED(m_Device->CreateSamplerState(&desc, m_SamplerAnisotropic.ReleaseAndGetAddressOf()))
-		return false;
-	
+		if FAILED(m_Device->CreateSamplerState(&desc, m_SamplerAnisotropic.ReleaseAndGetAddressOf()))
+			return false;
+	}
+
+	CreateBuffers();
+
 	return true;
 }
 
-bool DemoScene::CreateBuffers()
+void DemoScene::CreateBuffers()
 {
 	std::vector<GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
 
 	GeometricPrimitive::CreateSphere(vertices, indices, 3.0f, 32, false);
 	m_DrawableSphere->Create(m_Device.Get(), vertices, indices);
+
 	GeometricPrimitive::CreateBox(vertices, indices, XMFLOAT3(2.5f, 2.5f, 2.5f), false);
 	m_DrawableBox->Create(m_Device.Get(), vertices, indices);
+
 	GeometricPrimitive::CreateTorus(vertices, indices, 3.0f, 1.0f, 64, false);
 	m_DrawableTorus->Create(m_Device.Get(), vertices, indices);
+
 	GeometricPrimitive::CreateTeapot(vertices, indices, 3.0f, 32, false);
 	m_DrawableTeapot->Create(m_Device.Get(), vertices, indices);
 
-	D3D11_BUFFER_DESC cbDesc = {};
-	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.ByteWidth = sizeof(VS_PS_ConstantBufferPerObject);
 
-	D3D11_SUBRESOURCE_DATA cbData = {};
-	cbData.pSysMem = &m_CbPerObjectData;
+	Helpers::CreateConstantBuffer(m_Device.Get(), &m_CbPerFrameData, m_CbPerFrame.ReleaseAndGetAddressOf());
+	Helpers::CreateConstantBuffer(m_Device.Get(), &m_CbPerObjectData, m_CbPerObject.ReleaseAndGetAddressOf());
 
-	if (FAILED(m_Device->CreateBuffer(&cbDesc, &cbData, m_CbPerObject.ReleaseAndGetAddressOf())))
-		return false;
-
-	cbDesc = {};
-	cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-	cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.ByteWidth = sizeof(PS_ConstantBufferPerFrame);
-
-	cbData = {};
-	cbData.pSysMem = &m_CbPerFrameData;
-
-	if (FAILED(m_Device->CreateBuffer(&cbDesc, &cbData, m_CbPerFrame.ReleaseAndGetAddressOf())))
-		return false;
-
-
-	return true;
 }
 
 bool DemoScene::Initialize()
@@ -137,7 +118,6 @@ bool DemoScene::Initialize()
 	if (!CreateDeviceDependentResources())
 		return false;
 
-	
 	m_ImmediateContext->IASetInputLayout(m_SimpleVertexLayout.Get());
 	m_ImmediateContext->VSSetShader(m_SimpleVertexShader.Get(), nullptr, 0);
 	m_ImmediateContext->PSSetShader(m_SimplePixelShader.Get(), nullptr, 0);
@@ -169,16 +149,16 @@ void DemoScene::UpdateScene(float dt)
 
 	XMMATRIX worldBox = RotateY * XMMatrixTranslation(-2, -2, 0);
 	XMMATRIX worldSphere = RotateY * XMMatrixTranslation(3.5f, -2, 0);
-	XMMATRIX worldTorus = RotateZ * RotateX * XMMatrixTranslation(-2, 2, 2);
+	XMMATRIX worldTorus = RotateY * XMMatrixTranslation(-2, 2, 2);
 	XMMATRIX worldTeapot = RotateY * XMMatrixTranslation(4, 2, 2);
 
-	XMMATRIX WVPCube = worldBox * viewProj;
+	XMMATRIX WVPBox = worldBox * viewProj;
 	XMMATRIX WVPSphere = worldSphere * viewProj;
 	XMMATRIX WVPTorus = worldTorus * viewProj;
 	XMMATRIX WVPTeapot = worldTeapot * viewProj;
 
 	XMStoreFloat4x4(&m_DrawableBox->WorldTransform, worldBox);
-	XMStoreFloat4x4(&m_DrawableBox->WorldViewProjTransform, WVPCube);
+	XMStoreFloat4x4(&m_DrawableBox->WorldViewProjTransform, WVPBox);
 
 	XMStoreFloat4x4(&m_DrawableSphere->WorldTransform, worldSphere);
 	XMStoreFloat4x4(&m_DrawableSphere->WorldViewProjTransform, WVPSphere);
@@ -361,22 +341,21 @@ void DemoScene::DrawScene()
 	UINT stride = sizeof(GeometricPrimitive::VertexType);
 	UINT offset = 0;
 
-	static Drawable* drawables[] = { 
-		m_DrawableTeapot.get(), m_DrawableTorus.get() , m_DrawableBox.get(), m_DrawableSphere.get() };
+	static Drawable* drawables[] = { m_DrawableTeapot.get(), m_DrawableTorus.get() , m_DrawableBox.get(), m_DrawableSphere.get() };
 
-	for (auto const& object : drawables)
+	for (auto const& it : drawables)
 	{
-		m_CbPerObjectData.WorldViewProj = object->WorldViewProjTransform;
-		m_CbPerObjectData.World = object->WorldTransform;
-		m_CbPerObjectData.TextureTransform = object->TextureTransform;
-		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(object->WorldTransform);
-		m_CbPerObjectData.Material = object->Material;
+		m_CbPerObjectData.WorldViewProj = it->WorldViewProjTransform;
+		m_CbPerObjectData.World = it->WorldTransform;
+		m_CbPerObjectData.TextureTransform = it->TextureTransform;
+		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(it->WorldTransform);
+		m_CbPerObjectData.Material = it->Material;
 		Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerObject.Get(), &m_CbPerObjectData);
 
-		m_ImmediateContext->PSSetShaderResources(0, 1, object->TextureSRV.GetAddressOf());
-		m_ImmediateContext->IASetVertexBuffers(0, 1, object->VertexBuffer.GetAddressOf(), &stride, &offset);
-		m_ImmediateContext->IASetIndexBuffer(object->IndexBuffer.Get(), object->IndexBufferFormat, 0);
-		m_ImmediateContext->DrawIndexed(object->IndexCount, 0, 0);
+		m_ImmediateContext->PSSetShaderResources(0, 1, it->TextureSRV.GetAddressOf());
+		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
+		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
+		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 
 	}
 

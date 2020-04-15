@@ -114,5 +114,5 @@ public:
 private:
 	void Clear();
 	bool CreateDeviceDependentResources();
-	bool CreateBuffers();
+	void CreateBuffers();
 };

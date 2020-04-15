@@ -45,4 +45,21 @@ namespace Helpers
 		memcpy(mappedRes.pData, newData, sizeof(T));
 		ctx->Unmap(cbuffer, 0);
 	}
+
+	template<typename T>
+	static void CreateConstantBuffer(ID3D11Device* const device, const T* pData, ID3D11Buffer** outppBuffer)
+	{
+		assert(device != nullptr);
+
+		D3D11_BUFFER_DESC cbDesc = {};
+		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		cbDesc.ByteWidth = sizeof(T);
+
+		D3D11_SUBRESOURCE_DATA cbData = {};
+		cbData.pSysMem = pData;
+
+		DX::ThrowIfFailed(device->CreateBuffer(&cbDesc, &cbData, outppBuffer));
+	}
 };

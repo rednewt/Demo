@@ -40,8 +40,9 @@ float4 main(VertexOut pin) : SV_TARGET
         result.Specular += results[i].Specular;
     }
     
-    float4 SampleColor = DiffuseMap.Sample(Sampler, pin.Tex);
-    float4 final = SampleColor * (result.Ambient + result.Diffuse) + result.Specular;
+    float4 sampleColor = DiffuseMap.Sample(Sampler, pin.Tex);
+    float4 final = sampleColor * (result.Ambient + result.Diffuse) + result.Specular;
+    final.a = gMaterial.Diffuse.a * sampleColor.a;
     
     return final;
 }
