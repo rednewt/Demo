@@ -44,6 +44,8 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	m_DrawableTorus->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	m_DrawableTorus->Material.Ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.1f);
+
+	m_DrawableTeapot->Material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f);
 }
 
 bool DemoScene::CreateDeviceDependentResources()
@@ -81,6 +83,15 @@ bool DemoScene::CreateDeviceDependentResources()
 		if FAILED(m_Device->CreateSamplerState(&desc, m_SamplerAnisotropic.ReleaseAndGetAddressOf()))
 			return false;
 	}
+	{
+		CD3D11_BLEND_DESC desc(def);
+		desc.RenderTarget[0].BlendEnable = TRUE;
+		desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+		desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+		
+		if FAILED(m_Device->CreateBlendState(&desc, m_BlendStateTransparent.ReleaseAndGetAddressOf()))
+			return false;
+	}
 
 	CreateBuffers();
 
@@ -91,7 +102,7 @@ void DemoScene::CreateBuffers()
 {
 	std::vector<GeometricPrimitive::VertexType> vertices;
 	std::vector<uint16_t> indices;
-
+	
 	GeometricPrimitive::CreateSphere(vertices, indices, 3.0f, 32, false);
 	m_DrawableSphere->Create(m_Device.Get(), vertices, indices);
 
@@ -114,9 +125,12 @@ bool DemoScene::Initialize()
 {
 	if (!Super::Initialize())
 		return false;
+	
+	Super::ImGui_Init();
 
 	if (!CreateDeviceDependentResources())
 		return false;
+
 
 	m_ImmediateContext->IASetInputLayout(m_SimpleVertexLayout.Get());
 	m_ImmediateContext->VSSetShader(m_SimpleVertexShader.Get(), nullptr, 0);
@@ -128,7 +142,7 @@ bool DemoScene::Initialize()
 
 void DemoScene::UpdateScene(float dt)
 {
-	ImGui_NewFrame();
+	Super::ImGui_NewFrame();
 
 	XMVECTOR eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
 	//build projection matrix
@@ -143,14 +157,14 @@ void DemoScene::UpdateScene(float dt)
 	angle += 45.0f * dt;
 	
 	XMMATRIX viewProj = view * proj;
-	XMMATRIX RotateY = XMMatrixRotationY(XMConvertToRadians(angle));
-	XMMATRIX RotateX = XMMatrixRotationX(XMConvertToRadians(angle));
-	XMMATRIX RotateZ = XMMatrixRotationZ(XMConvertToRadians(angle));
+	XMMATRIX rotateY = XMMatrixRotationY(XMConvertToRadians(angle));
+	XMMATRIX rotateX = XMMatrixRotationX(XMConvertToRadians(angle));
+	XMMATRIX rotateZ = XMMatrixRotationZ(XMConvertToRadians(angle));
 
-	XMMATRIX worldBox = RotateY * XMMatrixTranslation(-2, -2, 0);
-	XMMATRIX worldSphere = RotateY * XMMatrixTranslation(3.5f, -2, 0);
-	XMMATRIX worldTorus = RotateY * XMMatrixTranslation(-2, 2, 2);
-	XMMATRIX worldTeapot = RotateY * XMMatrixTranslation(4, 2, 2);
+	XMMATRIX worldBox = rotateY * XMMatrixTranslation(-2, -2, 0);
+	XMMATRIX worldSphere = rotateY * XMMatrixTranslation(3.5f, -2, 0);
+	XMMATRIX worldTorus = rotateY * XMMatrixTranslation(-2, 2, 2);
+	XMMATRIX worldTeapot = rotateY * XMMatrixTranslation(4, 2, 2);
 
 	XMMATRIX WVPBox = worldBox * viewProj;
 	XMMATRIX WVPSphere = worldSphere * viewProj;
@@ -172,9 +186,9 @@ void DemoScene::UpdateScene(float dt)
 
 
 	//DirLightVector is updated by ImGui widget
-	static XMFLOAT3 DirLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	static XMFLOAT3 dirLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
 	//SetDirection method will normalize the vector before setting it
-	m_CbPerFrameData.DirLight.SetDirection(DirLightVector);
+	m_CbPerFrameData.DirLight.SetDirection(dirLightVector);
 
 	XMStoreFloat3(&m_CbPerFrameData.EyePos, eyePos);
 
@@ -198,25 +212,25 @@ void DemoScene::UpdateScene(float dt)
 			{
 				if (!isActive)
 				{
-					oldDirection = DirLightVector;
+					oldDirection = dirLightVector;
 					oldAmbient = m_CbPerFrameData.DirLight.Ambient;
 
 					//setting DirLightVector to zero-vector only zeros out diffuse & specular
-					DirLightVector = XMFLOAT3(0.0f, 0.0f, 0.0f); 
+					dirLightVector = XMFLOAT3(0.0f, 0.0f, 0.0f); 
 					//we still need to zero out ambient manually
 					m_CbPerFrameData.DirLight.Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 				}
 				else
 				{
 					m_CbPerFrameData.DirLight.Ambient = oldAmbient;
-					DirLightVector = oldDirection;
+					dirLightVector = oldDirection;
 				}
 			}
 
 			ImGui::ColorEdit4("Ambient##1", reinterpret_cast<float*>(&m_CbPerFrameData.DirLight.Ambient), 2);
 			ImGui::ColorEdit4("Diffuse##1", reinterpret_cast<float*>(&m_CbPerFrameData.DirLight.Diffuse), 2);
 			ImGui::ColorEdit3("Specular##1", reinterpret_cast<float*>(&m_CbPerFrameData.DirLight.Specular), 2);
-			ImGui::InputFloat3("Direction##1", reinterpret_cast<float*>(&DirLightVector), 2);
+			ImGui::InputFloat3("Direction##1", reinterpret_cast<float*>(&dirLightVector), 2);
 
 			ImGui::TreePop();
 		}
@@ -341,7 +355,7 @@ void DemoScene::DrawScene()
 	UINT stride = sizeof(GeometricPrimitive::VertexType);
 	UINT offset = 0;
 
-	static Drawable* drawables[] = { m_DrawableTeapot.get(), m_DrawableTorus.get() , m_DrawableBox.get(), m_DrawableSphere.get() };
+	static Drawable* drawables[] = { m_DrawableTorus.get(), m_DrawableBox.get(), m_DrawableSphere.get() };
 
 	for (auto const& it : drawables)
 	{
@@ -350,19 +364,47 @@ void DemoScene::DrawScene()
 		m_CbPerObjectData.TextureTransform = it->TextureTransform;
 		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(it->WorldTransform);
 		m_CbPerObjectData.Material = it->Material;
+
 		Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerObject.Get(), &m_CbPerObjectData);
 
 		m_ImmediateContext->PSSetShaderResources(0, 1, it->TextureSRV.GetAddressOf());
 		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
 		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
-
 	}
 
-//	ImGui::ShowDemoWindow();
+	static Drawable* transparentDrawables[] = { m_DrawableTeapot.get() };
+	
+	for (auto const& it : transparentDrawables)
+	{
+		m_CbPerObjectData.WorldViewProj = it->WorldViewProjTransform;
+		m_CbPerObjectData.World = it->WorldTransform;
+		m_CbPerObjectData.TextureTransform = it->TextureTransform;
+		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(it->WorldTransform);
+		m_CbPerObjectData.Material = it->Material;
+
+		Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerObject.Get(), &m_CbPerObjectData);
+
+		m_ImmediateContext->PSSetShaderResources(0, 1, it->TextureSRV.GetAddressOf());
+		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
+		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
+		
+		m_ImmediateContext->OMSetBlendState(m_BlendStateTransparent.Get(), reinterpret_cast<float*>(&XMVectorZero()), 0xffffffff);
+		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
+		m_ImmediateContext->OMSetBlendState(nullptr, reinterpret_cast<float*>(&XMVectorZero()), 0xffffffff);
+	}
+
+	//ImGui::ShowDemoWindow();
+	static bool bVSync = true;
+	ImGui::Checkbox("VSync:", &bVSync);
+	ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	
+	if (bVSync)
+		m_SwapChain->Present(1, 0);
+	else
+		m_SwapChain->Present(0, 0);
 
-	m_SwapChain->Present(1, 0);
 }
 

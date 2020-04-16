@@ -32,7 +32,7 @@ DemoBase::~DemoBase()
 	ImGui::DestroyContext();
 }
 
-void DemoBase::Init_ImGui()
+void DemoBase::ImGui_Init()
 {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -117,7 +117,6 @@ bool DemoBase::Initialize()
 	
 	OnResize();
 
-	Init_ImGui();
 
 	return true;
 }

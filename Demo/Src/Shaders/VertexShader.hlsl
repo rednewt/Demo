@@ -7,7 +7,8 @@ struct VertexIn
     float2 Tex : TEXCOORD0;
 };  
 
- 
+
+
 VertexOut main( VertexIn vin ) 
 { 
     VertexOut vout;
