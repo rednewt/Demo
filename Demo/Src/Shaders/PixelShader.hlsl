@@ -21,7 +21,7 @@ float4 main(VertexOut pin) : SV_TARGET
 {
     pin.NormalW = normalize(pin.NormalW);
     float3 toEyeVector = normalize(gEyePos - pin.PosW);
-    
+ 
     LightingOutput results[NUM_LIGHTS];
     results[0] = ComputeDirectionalLight(gMaterial, gLight, pin.NormalW, toEyeVector);
     results[1] = ComputePointLight(gMaterial, gPointLight, pin.NormalW, pin.PosW, toEyeVector);

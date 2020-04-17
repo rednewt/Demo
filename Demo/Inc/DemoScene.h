@@ -43,7 +43,9 @@ private:
 	PS_ConstantBufferPerFrame m_CbPerFrameData;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
-	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BlendStateTransparent;
+	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSTransparent;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSCullNone;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSDisableWrite;
 public:
 	explicit DemoScene(const HWND& hwnd);
 	DemoScene(const DemoScene&) = delete;
@@ -54,6 +56,7 @@ public:
 	void DrawScene() override;
 private:
 	void Clear();
+	void Present();
 	bool CreateDeviceDependentResources();
 	void CreateBuffers();
 };

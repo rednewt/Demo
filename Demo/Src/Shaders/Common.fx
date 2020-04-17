@@ -70,8 +70,13 @@ LightingOutput ComputeDirectionalLight(Material mat, DirectionalLight light, flo
     
     float diffuseIntensity = saturate(dot(-light.Direction, normal));
     
-    float3 reflectVector = normalize(reflect(light.Direction, normal));   
-    float specularIntensity = pow(saturate(dot(reflectVector, toEyeVector)), mat.Specular.w);
+    float specularIntensity = 0.0f;
+    [flatten]
+    if (diffuseIntensity > 0.0f)
+    {
+        float3 reflectVector = normalize(reflect(light.Direction, normal));
+        specularIntensity = pow(saturate(dot(reflectVector, toEyeVector)), mat.Specular.w);
+    }
     
     result.Ambient = mat.Ambient * light.Ambient;
     result.Diffuse = diffuseIntensity * (mat.Diffuse * light.Diffuse);
@@ -100,8 +105,13 @@ LightingOutput ComputePointLight(Material mat, PointLight light, float3 normal, 
     
     float diffuseIntensity = saturate(dot(lightPosToPixelVector, normal));
     
-    float3 reflectVector = reflect(-lightPosToPixelVector, normal);
-    float specularIntensity = pow(saturate(dot(reflectVector, toEyeVector)), mat.Specular.w);
+    float specularIntensity = 0.0f;
+    [flatten]
+    if (diffuseIntensity > 0.0f)
+    {
+        float3 reflectVector = reflect(-lightPosToPixelVector, normal);
+        specularIntensity = pow(saturate(dot(reflectVector, toEyeVector)), mat.Specular.w);
+    }
     
     //attenuation equation
     //  1 / ( a0 + a1*d + a2* d^2 )
@@ -133,8 +143,13 @@ LightingOutput ComputeSpotLight(Material mat, SpotLight light, float3 normal, fl
     
     float diffuseIntensity = saturate((dot(lightPosToPixelVector, normal)));
     
-    float3 reflectVector = reflect(-lightPosToPixelVector, normal);
-    float specularIntensity = pow(saturate(dot(reflectVector, toEyeVector)), mat.Specular.w);
+    float specularIntensity = 0.0f;
+    [flatten]
+    if (diffuseIntensity > 0.0f)
+    {
+        float3 reflectVector = reflect(-lightPosToPixelVector, normal);
+        specularIntensity = pow(saturate(dot(reflectVector, toEyeVector)), mat.Specular.w);
+    }
     
     float coneSpotIntensity = pow(saturate(dot(-light.Direction, lightPosToPixelVector)), light.SpotPower);
     //attenuation equation
