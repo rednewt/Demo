@@ -9,6 +9,7 @@ cbuffer cbPerFrame : register(b1)
     SpotLight gSpotLight;
     float3 gEyePos; //In world space
     float pad;
+    FogProperties gFog;
 };
 
  
@@ -20,8 +21,13 @@ Texture2D DiffuseMap : register(t0);
 float4 main(VertexOut pin) : SV_TARGET
 {
     pin.NormalW = normalize(pin.NormalW);
-    float3 toEyeVector = normalize(gEyePos - pin.PosW);
- 
+    
+    float3 toEyeVector = gEyePos - pin.PosW;
+    float distToEye = length(toEyeVector);
+    
+    //normalize
+    toEyeVector /= distToEye;
+    
     LightingOutput results[NUM_LIGHTS];
     results[0] = ComputeDirectionalLight(gMaterial, gLight, pin.NormalW, toEyeVector);
     results[1] = ComputePointLight(gMaterial, gPointLight, pin.NormalW, pin.PosW, toEyeVector);
@@ -43,6 +49,13 @@ float4 main(VertexOut pin) : SV_TARGET
     float4 sampleColor = DiffuseMap.Sample(Sampler, pin.Tex);
     float4 final = sampleColor * (result.Ambient + result.Diffuse) + result.Specular;
     final.a = gMaterial.Diffuse.a * sampleColor.a;
+    
+    [flatten]
+    if (gFog.FogEnabled > 0.0f)
+    {
+        float lerpFactor = saturate((distToEye - gFog.FogStart) / gFog.FogRange);
+        final.rgb = lerp(final.rgb, gFog.FogColor.rgb, lerpFactor).rgb;
+    }
     
     return final;
 }

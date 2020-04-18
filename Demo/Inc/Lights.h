@@ -15,7 +15,10 @@ struct Material
 	DirectX::XMFLOAT4 Ambient;
 	DirectX::XMFLOAT4 Diffuse;
 	DirectX::XMFLOAT4 Specular; // w = SpecPower
+	
 };
+
+static_assert(sizeof(Material) % 16 == 0, "Material struct not 16-byte aligned");
 
 struct PointLight
 {
@@ -40,6 +43,8 @@ struct PointLight
 	DirectX::XMFLOAT3 Attenuation;
 	float pad;
 };
+
+static_assert(sizeof(PointLight) % 16 == 0, "PointLight struct not 16-byte aligned");
 
 struct SpotLight
 {
@@ -88,6 +93,9 @@ struct SpotLight
 	}
 };
 
+static_assert(sizeof(SpotLight) % 16 == 0, "SpotLight struct not 16-byte aligned");
+
+
 struct DirectionalLight
 {
 	DirectX::XMFLOAT4 Ambient;
@@ -117,3 +125,26 @@ struct DirectionalLight
 		SetDirection(v);
 	}
 };
+
+static_assert(sizeof(DirectionalLight) % 16 == 0, "DirectionalLight struct not 16-byte aligned");
+
+
+
+struct FogProperties
+{
+	float FogStart;
+	float FogRange;
+	float FogEnabled; // Set to <= 0 to disable
+	float pad;
+	DirectX::XMFLOAT4 FogColor;
+
+	FogProperties() :
+		FogStart(20.0f),
+		FogRange(100.0f),
+		FogEnabled(1.0f)
+	{
+		DirectX::XMStoreFloat4(&FogColor, DirectX::Colors::Silver);
+	}
+};
+
+static_assert(sizeof(FogProperties) % 16 == 0, "FogProperties struct not 16-byte aligned");

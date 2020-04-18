@@ -18,9 +18,16 @@ namespace
 		DirectionalLight DirLight;
 		PointLight PointLight;
 		SpotLight SpotLight;
+
 		DirectX::XMFLOAT3 EyePos;
 		float pad;
+
+		FogProperties Fog;
 	};
+
+	static_assert(sizeof(PS_ConstantBufferPerFrame) % 16 == 0, "PS_ConstantBufferPerFrame struct not 16-byte aligned");
+	static_assert(sizeof(VS_PS_ConstantBufferPerObject) % 16 == 0, "VS_PS_ConstantBufferPerObject struct not 16-byte aligned");
+
 }
 
 class DemoScene : public DemoBase

@@ -52,6 +52,15 @@ struct SpotLight
     float pad;
 };
 
+struct FogProperties
+{
+    float FogStart;
+    float FogRange;
+    float FogEnabled; //set to 0.0f to disable
+    float pad;
+    float4 FogColor;
+};
+
 
 cbuffer cbPerObject : register(b0)
 {

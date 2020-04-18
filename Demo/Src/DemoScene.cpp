@@ -226,6 +226,10 @@ void DemoScene::UpdateScene(float dt)
 	if (ImGui::TreeNode("Camera"))
 	{
 		ImGui::DragFloat3("EyePos", reinterpret_cast<float*>(&eyePos), 1.0f, -100.0f, 100.0f);
+		
+		if (XMVector3Equal(eyePos, XMVectorZero()))
+			eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+
 		ImGui::SliderFloat("Rotate-Y", &cameraAngle, 0.0f, 360.0f);
 		ImGui::TreePop();
 	}
@@ -366,7 +370,7 @@ void DemoScene::UpdateScene(float dt)
 
 void DemoScene::Clear()
 {
-	static XMVECTOR backBufferColor = DirectX::Colors::Black;
+	static XMVECTOR backBufferColor = DirectX::Colors::Silver;
 	ImGui::PushItemWidth(ImGui::GetColumnWidth() * 0.5f);
 	ImGui::ColorEdit4("clear color", reinterpret_cast<float*>(&backBufferColor));
 	ImGui::PopItemWidth();

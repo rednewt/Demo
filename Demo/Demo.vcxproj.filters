@@ -52,9 +52,6 @@
     <ClInclude Include="Inc\Vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Inc\Lights.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Inc\imgui.h">
       <Filter>Header Files\imgui</Filter>
     </ClInclude>
@@ -78,6 +75,9 @@
     </ClInclude>
     <ClInclude Include="Inc\imstb_truetype.h">
       <Filter>Header Files\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Inc\Lights.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
