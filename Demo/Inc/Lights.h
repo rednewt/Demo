@@ -18,8 +18,6 @@ struct Material
 	
 };
 
-static_assert(sizeof(Material) % 16 == 0, "Material struct not 16-byte aligned");
-
 struct PointLight
 {
 	PointLight() :
@@ -43,8 +41,6 @@ struct PointLight
 	DirectX::XMFLOAT3 Attenuation;
 	float pad;
 };
-
-static_assert(sizeof(PointLight) % 16 == 0, "PointLight struct not 16-byte aligned");
 
 struct SpotLight
 {
@@ -93,8 +89,6 @@ struct SpotLight
 	}
 };
 
-static_assert(sizeof(SpotLight) % 16 == 0, "SpotLight struct not 16-byte aligned");
-
 
 struct DirectionalLight
 {
@@ -126,8 +120,6 @@ struct DirectionalLight
 	}
 };
 
-static_assert(sizeof(DirectionalLight) % 16 == 0, "DirectionalLight struct not 16-byte aligned");
-
 
 
 struct FogProperties
@@ -147,4 +139,3 @@ struct FogProperties
 	}
 };
 
-static_assert(sizeof(FogProperties) % 16 == 0, "FogProperties struct not 16-byte aligned");

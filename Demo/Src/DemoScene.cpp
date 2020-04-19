@@ -70,9 +70,9 @@ bool DemoScene::CreateDeviceDependentResources()
 	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\flooring.png", 0, m_DrawableTeapot->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 	
-	CD3D11_DEFAULT def;
+	CD3D11_DEFAULT d3dDefault;
 	{
-		CD3D11_SAMPLER_DESC desc(def);
+		CD3D11_SAMPLER_DESC desc(d3dDefault);
 		desc.Filter = D3D11_FILTER_ANISOTROPIC;
 		desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 		desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -83,17 +83,17 @@ bool DemoScene::CreateDeviceDependentResources()
 			return false;
 	}
 	{
-		CD3D11_BLEND_DESC desc(def);
+		CD3D11_BLEND_DESC desc(d3dDefault);
 		desc.RenderTarget[0].BlendEnable = TRUE;
 		desc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
 		desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
 		desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-		
+
 		if FAILED(m_Device->CreateBlendState(&desc, m_BSTransparent.ReleaseAndGetAddressOf()))
 			return false;
 	}
 	{
-		CD3D11_RASTERIZER_DESC desc(def);
+		CD3D11_RASTERIZER_DESC desc(d3dDefault);
 
 		desc.FillMode = D3D11_FILL_SOLID;
 		desc.CullMode = D3D11_CULL_NONE;
@@ -102,15 +102,12 @@ bool DemoScene::CreateDeviceDependentResources()
 			return false;
 	}
 	{
-		CD3D11_DEPTH_STENCIL_DESC desc(def);
+		CD3D11_DEPTH_STENCIL_DESC desc(d3dDefault);
 
 		desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-		//desc.DepthFunc = D3D11_COMPARISON_ALWAYS;
-		//desc.DepthEnable = FALSE;
 
 		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSDisableWrite.ReleaseAndGetAddressOf()))
 			return false;
-
 	}
 
 	CreateBuffers();
@@ -206,7 +203,7 @@ void DemoScene::UpdateScene(float dt)
 	XMStoreFloat4x4(&m_DrawableTeapot->WorldTransform, worldTeapot);
 	XMStoreFloat4x4(&m_DrawableTeapot->WorldViewProjTransform, WVPTeapot);
 
-
+	
 	//DirLightVector is updated by ImGui widget
 	static XMFLOAT3 dirLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
 	//SetDirection method will normalize the vector before setting it
@@ -223,7 +220,28 @@ void DemoScene::UpdateScene(float dt)
 		return;
 	}
 
-	if (ImGui::TreeNode("Camera"))
+	if (ImGui::CollapsingHeader("Screen settings"))
+	{
+		static int resolution[2] = { m_ClientWidth, m_ClientHeight };
+		if (ImGui::InputInt2("(Width, Height)", resolution))
+		{
+			if (resolution[0] < 800)
+				resolution[0] = 800;
+			if (resolution[1] < 600)
+				resolution[1] = 600;
+		}
+
+		if (ImGui::Button("Change"))
+		{
+			m_ClientWidth = resolution[0];
+			m_ClientHeight = resolution[1];
+
+			assert(SetWindowPos(m_MainWindow, 0, 0, 0, m_ClientWidth, m_ClientHeight, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER) != 0);
+			Super::OnResize();
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Camera"))
 	{
 		ImGui::DragFloat3("EyePos", reinterpret_cast<float*>(&eyePos), 1.0f, -100.0f, 100.0f);
 		
@@ -231,7 +249,27 @@ void DemoScene::UpdateScene(float dt)
 			eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
 
 		ImGui::SliderFloat("Rotate-Y", &cameraAngle, 0.0f, 360.0f);
-		ImGui::TreePop();
+	}
+
+	if (ImGui::CollapsingHeader("Effects"))
+	{
+		if (ImGui::TreeNode("Fog"))
+		{
+			static bool isActive = true;
+			if (ImGui::Checkbox("Enabled", &isActive))
+			{
+				if (isActive)
+					m_CbPerFrameData.Fog.FogEnabled = 1.0f;
+				else
+					m_CbPerFrameData.Fog.FogEnabled = 0.0f;
+			}
+
+			ImGui::InputFloat("Fog Start", &m_CbPerFrameData.Fog.FogStart);
+			ImGui::InputFloat("Fog Range", &m_CbPerFrameData.Fog.FogRange);
+			ImGui::ColorEdit3("Fog Color", reinterpret_cast<float*>(&m_CbPerFrameData.Fog.FogColor));
+
+			ImGui::TreePop();
+		}
 	}
 
 	if (ImGui::CollapsingHeader("Lights"))

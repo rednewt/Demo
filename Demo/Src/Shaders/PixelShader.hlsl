@@ -7,8 +7,10 @@ cbuffer cbPerFrame : register(b1)
     DirectionalLight gLight;
     PointLight gPointLight;
     SpotLight gSpotLight;
+    
     float3 gEyePos; //In world space
     float pad;
+   
     FogProperties gFog;
 };
 
@@ -54,7 +56,7 @@ float4 main(VertexOut pin) : SV_TARGET
     if (gFog.FogEnabled > 0.0f)
     {
         float lerpFactor = saturate((distToEye - gFog.FogStart) / gFog.FogRange);
-        final.rgb = lerp(final.rgb, gFog.FogColor.rgb, lerpFactor).rgb;
+        final.rgb = lerp(final.rgb, gFog.FogColor.rgb, lerpFactor);
     }
     
     return final;

@@ -123,6 +123,10 @@ bool DemoBase::Initialize()
 
 void DemoBase::OnResize()
 {
+	m_RenderTargetView.Reset();
+	m_DepthStencilView.Reset();
+	m_DepthStencilBuffer.Reset();
+
 	DX::ThrowIfFailed(m_SwapChain->ResizeBuffers(1, m_ClientWidth, m_ClientHeight, m_BackBufferFormat, 0));
 	
 	ComPtr<ID3D11Texture2D> backBuffer;
