@@ -3,6 +3,13 @@
 #include <d3d11.h>
 #include <wrl/client.h>
 
+constexpr auto MIN_WIDTH = 1280;
+constexpr auto MIN_HEIGHT = 720;
+
+constexpr auto MAX_WIDTH = 3840;
+constexpr auto MAX_HEIGHT = 2160;
+
+
 //use constructor for initializing variables
 //use Initialize() for creating resources
 
@@ -42,4 +49,6 @@ public:
 protected:
 	void ImGui_NewFrame();
 	void ImGui_Init();
+	void ImGui_Destroy();
+	void UpdateClientSizeVars();
 };

@@ -7,7 +7,8 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 
-
+//Used in AdjustWindowRect(..) while resizing 
+extern DWORD g_WindowStyle;
 
 //These headers may not be present, so you may need to build the project once
 namespace
@@ -106,7 +107,7 @@ bool DemoScene::CreateDeviceDependentResources()
 
 		desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 
-		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSDisableWrite.ReleaseAndGetAddressOf()))
+		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSSDisableWrite.ReleaseAndGetAddressOf()))
 			return false;
 	}
 
@@ -220,23 +221,37 @@ void DemoScene::UpdateScene(float dt)
 		return;
 	}
 
-	if (ImGui::CollapsingHeader("Screen settings"))
+	if (ImGui::CollapsingHeader("Screen Resolution"))
 	{
-		static int resolution[2] = { m_ClientWidth, m_ClientHeight };
-		if (ImGui::InputInt2("(Width, Height)", resolution))
-		{
-			if (resolution[0] < 800)
-				resolution[0] = 800;
-			if (resolution[1] < 600)
-				resolution[1] = 600;
-		}
+		//input of client size area
+		static int inputWidth = m_ClientWidth;
+		static int inputHeight = m_ClientHeight;
 
-		if (ImGui::Button("Change"))
+		ImGui::InputInt("Width", &inputWidth, 100, 200);
+		ImGui::InputInt("Height", &inputHeight, 100, 200);
+		
+		if (ImGui::Button("Resize"))
 		{
-			m_ClientWidth = resolution[0];
-			m_ClientHeight = resolution[1];
+			//Should probably clamp it on min/max values but works for now
+			if (inputWidth < MIN_WIDTH || inputHeight < MIN_HEIGHT ||
+				inputWidth > MAX_WIDTH || inputHeight > MAX_HEIGHT)
+			{
+				inputWidth = MIN_WIDTH;
+				inputHeight = MIN_HEIGHT;
+			}
 
-			assert(SetWindowPos(m_MainWindow, 0, 0, 0, m_ClientWidth, m_ClientHeight, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOZORDER) != 0);
+			//Calculate window size from client size
+			RECT wr = { 0, 0, inputWidth, inputHeight };
+			AdjustWindowRect(&wr, g_WindowStyle, 0);
+
+			UINT WindowWidth = static_cast<UINT>(wr.right - wr.left);
+			UINT WindowHeight = static_cast<UINT>(wr.bottom - wr.top);
+			
+			//Resize window area
+			assert(SetWindowPos(m_MainWindow, 0, 0, 0, WindowWidth, WindowHeight,
+				SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER) != 0);
+			
+			//Resize color & depth buffers
 			Super::OnResize();
 		}
 	}
@@ -286,9 +301,9 @@ void DemoScene::UpdateScene(float dt)
 					oldDirection = dirLightVector;
 					oldAmbient = m_CbPerFrameData.DirLight.Ambient;
 
-					//setting DirLightVector to zero-vector only zeros out diffuse & specular
+					//setting DirLightVector to zero-vector only zeros out diffuse & specular color
 					dirLightVector = XMFLOAT3(0.0f, 0.0f, 0.0f); 
-					//we still need to zero out ambient manually
+					//we still need to zero out ambient color manually
 					m_CbPerFrameData.DirLight.Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 				}
 				else
@@ -309,16 +324,16 @@ void DemoScene::UpdateScene(float dt)
 		if (ImGui::TreeNode("Point Light"))
 		{
 			static bool isActive = true;
-			static float oldValue;
+			static float oldRange;
 			if (ImGui::Checkbox("Is Active##2", &isActive))
 			{
 				if (!isActive)
 				{
-					oldValue = m_CbPerFrameData.PointLight.Range;
+					oldRange = m_CbPerFrameData.PointLight.Range;
 					m_CbPerFrameData.PointLight.Range = 0;
 				}
 				else
-					m_CbPerFrameData.PointLight.Range = oldValue;
+					m_CbPerFrameData.PointLight.Range = oldRange;
 			}
 
 			ImGui::ColorEdit4("Ambient##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Ambient), 2);
@@ -335,16 +350,16 @@ void DemoScene::UpdateScene(float dt)
 		if (ImGui::TreeNode("Spot Light"))
 		{
 			static bool isActive = true;
-			static float oldValue;
+			static float oldRange;
 			if (ImGui::Checkbox("Is Active##3", &isActive))
 			{
 				if (!isActive)
 				{
-					oldValue = m_CbPerFrameData.SpotLight.Range;
+					oldRange = m_CbPerFrameData.SpotLight.Range;
 					m_CbPerFrameData.SpotLight.Range = 0;
 				}
 				else
-					m_CbPerFrameData.SpotLight.Range = oldValue;
+					m_CbPerFrameData.SpotLight.Range = oldRange;
 			}
 
 			ImGui::ColorEdit4("Ambient##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Ambient), 2);
@@ -454,7 +469,7 @@ void DemoScene::DrawScene()
 	float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), blendFactor, 0xffffffff);
 	m_ImmediateContext->RSSetState(m_RSCullNone.Get());
-	m_ImmediateContext->OMSetDepthStencilState(m_DSDisableWrite.Get(), 0);
+	m_ImmediateContext->OMSetDepthStencilState(m_DSSDisableWrite.Get(), 0);
 
 	for (auto const& it : transparentDrawables)
 	{

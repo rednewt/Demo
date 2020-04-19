@@ -11,6 +11,7 @@ bool InitializeWindow(HINSTANCE hInstance, HWND& outWindowHandle);
 constexpr auto g_ClientWidth = 1280;
 constexpr auto g_ClientHeight = 720;
 
+DWORD g_WindowStyle = WS_OVERLAPPEDWINDOW ^ (WS_THICKFRAME | WS_MAXIMIZEBOX);
 
 INT WINAPI wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -94,10 +95,10 @@ bool InitializeWindow(HINSTANCE hInstance, HWND& windowHandle)
 		return false;
 
 	RECT wr = { 0, 0, g_ClientWidth, g_ClientHeight };
-	AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
+	AdjustWindowRect(&wr, g_WindowStyle, FALSE);
 
 	windowHandle = CreateWindow(windowClass.c_str(), L"Demo",
-		WS_OVERLAPPEDWINDOW,
+		g_WindowStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		wr.right - wr.left, wr.bottom - wr.top,
 		0, 0, hInstance, 0);

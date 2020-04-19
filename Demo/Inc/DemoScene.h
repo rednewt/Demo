@@ -52,7 +52,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSTransparent;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSCullNone;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSDisableWrite;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSDisableWrite;
 public:
 	explicit DemoScene(const HWND& hwnd);
 	DemoScene(const DemoScene&) = delete;

@@ -19,19 +19,28 @@ DemoBase::DemoBase(const HWND& hwnd) :
 	 
 	m_ScreenViewport = { };
 	
+	UpdateClientSizeVars();
+}
+
+void DemoBase::UpdateClientSizeVars()
+{
 	RECT rect;
-	GetClientRect(hwnd, &rect);
-	m_ClientWidth = rect.right - rect.left;
-	m_ClientHeight = rect.bottom - rect.top;
+	GetClientRect(m_MainWindow, &rect);
+	m_ClientWidth = static_cast<UINT>(rect.right - rect.left);
+	m_ClientHeight = static_cast<UINT>(rect.bottom - rect.top);
 }
 
 DemoBase::~DemoBase()
+{
+	ImGui_Destroy();
+}
+
+void DemoBase::ImGui_Destroy()
 {
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 }
-
 void DemoBase::ImGui_Init()
 {
 	// Setup Dear ImGui context
@@ -114,15 +123,19 @@ bool DemoBase::Initialize()
 
 	if FAILED(dxgiFactory->CreateSwapChain(m_Device.Get(), &sd, m_SwapChain.ReleaseAndGetAddressOf()))
 		return false;
+
+	//disable ALT-enter fullscreen
+	dxgiFactory->MakeWindowAssociation(m_MainWindow, DXGI_MWA_NO_WINDOW_CHANGES);
 	
 	OnResize();
-
 
 	return true;
 }
 
 void DemoBase::OnResize()
 {
+	UpdateClientSizeVars();
+
 	m_RenderTargetView.Reset();
 	m_DepthStencilView.Reset();
 	m_DepthStencilBuffer.Reset();
@@ -171,3 +184,4 @@ void DemoBase::OnResize()
 	m_ImmediateContext->RSSetViewports(1, &m_ScreenViewport);
 
 }
+
