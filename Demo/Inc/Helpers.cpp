@@ -9,7 +9,8 @@ void Helpers::CreateGrid(std::vector<DirectX::VertexPositionNormalTexture>& vert
 	indices.clear();
 
 	UINT vertexCount = tessellation * tessellation;
-	UINT faceCount = (tessellation - 1) * (tessellation - 1) * 2;
+	UINT quadCount = (tessellation - 1) * (tessellation - 1);
+	UINT faceCount = quadCount * 2;
 
 	float quadSizeX = width / (tessellation - 1);
 	float quadSizeZ = depth / (tessellation - 1);
@@ -30,26 +31,31 @@ void Helpers::CreateGrid(std::vector<DirectX::VertexPositionNormalTexture>& vert
 		{
 			float x = -halfWidth + j * quadSizeX;
 
-			vertices[i * tessellation + j].position = XMFLOAT3(x, 0.0f, z);
-			vertices[i * tessellation + j].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
-			vertices[i * tessellation + j].textureCoordinate = XMFLOAT2(quadU * j, quadV * i);
+			int rowIndex = i * tessellation;
+
+			vertices[rowIndex + j].position = XMFLOAT3(x, 0.0f, z);
+			vertices[rowIndex + j].normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+			vertices[rowIndex + j].textureCoordinate = XMFLOAT2(quadU * j, quadV * i);
 		}
 	}
 
 	indices.resize(faceCount * 3);
 
 	UINT k = 0;
-	for (int i = 0; i < tessellation; ++i)
+	for (int i = 0; i < tessellation - 1; ++i)
 	{
-		for (int j = 0; j < tessellation; ++j)
+		for (int j = 0; j < tessellation - 1; ++j)
 		{
-		       indices[k] = i * tessellation + j;
-		       indices[k + 1] = i * tessellation + j + 1;
-		       indices[k + 2] = (i + 1) * tessellation + j;
-		       indices[k + 3] = (i + 1) * tessellation + j;
-		       indices[k + 4] = i * tessellation + j + 1;
-		       indices[k + 5] = (i + 1) * tessellation + j + 1;
-				
+			int rowIndex = i * tessellation;
+			int nextRowIndex = (i + 1) * tessellation;
+
+			indices[k] = rowIndex + j;
+			indices[k + 1] = rowIndex + j + 1;
+			indices[k + 2] = nextRowIndex + j;
+			indices[k + 3] = nextRowIndex + j;
+			indices[k + 4] = rowIndex + j + 1;
+			indices[k + 5] = nextRowIndex + j + 1;
+
 			k += 6;
 		}
 	}

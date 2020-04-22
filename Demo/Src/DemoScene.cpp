@@ -46,7 +46,6 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	m_DrawableTorus->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	m_DrawableTorus->Material.Ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.1f);
-
 }
 
 bool DemoScene::CreateDeviceDependentResources()
@@ -60,6 +59,7 @@ bool DemoScene::CreateDeviceDependentResources()
 	if FAILED(m_Device->CreatePixelShader(g_PSBasicShader, sizeof(g_PSBasicShader), nullptr, m_SimplePixelShader.ReleaseAndGetAddressOf()))
 		return false;
 
+#pragma region Load Textures
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\WireFence.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 
@@ -74,7 +74,7 @@ bool DemoScene::CreateDeviceDependentResources()
 
 	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\flooring.png", 0, m_DrawableTeapot->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
-	
+#pragma endregion
 
 	CD3D11_DEFAULT d3dDefault;
 	{
@@ -100,16 +100,19 @@ bool DemoScene::CreateDeviceDependentResources()
 	}
 	{
 		CD3D11_RASTERIZER_DESC desc(d3dDefault);
-
-		desc.FillMode = D3D11_FILL_SOLID;
 		desc.CullMode = D3D11_CULL_NONE;
 
 		if FAILED(m_Device->CreateRasterizerState(&desc, m_RSCullNone.ReleaseAndGetAddressOf()))
 			return false;
+
+		desc = CD3D11_RASTERIZER_DESC(d3dDefault);
+		desc.FillMode = D3D11_FILL_WIREFRAME;
+
+		if FAILED(m_Device->CreateRasterizerState(&desc, m_RSWireframe.ReleaseAndGetAddressOf()))
+			return false;
 	}
 	{
 		CD3D11_DEPTH_STENCIL_DESC desc(d3dDefault);
-
 		desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 
 		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSSDisableWrite.ReleaseAndGetAddressOf()))
@@ -138,7 +141,7 @@ void DemoScene::CreateBuffers()
 	GeometricPrimitive::CreateTeapot(vertices, indices, 3.0f, 8, false);
 	m_DrawableTeapot->Create(m_Device.Get(), vertices, indices);
 
-	Helpers::CreateGrid(vertices, indices, 50.0f, 50.0f);
+	Helpers::CreateGrid(vertices, indices, 100.0f, 100.0f);
 	m_DrawableGrid->Create(m_Device.Get(), vertices, indices);
 
 	Helpers::CreateConstantBuffer(m_Device.Get(), &m_CbPerFrameData, m_CbPerFrame.ReleaseAndGetAddressOf());
@@ -170,14 +173,14 @@ void DemoScene::UpdateScene(float dt)
 
 	//values updated by ImGui widgets
 	static float cameraAngle = 0.0f;
-	static XMVECTOR eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+	static XMVECTOR eyePos = XMVectorSet(0.0f, 7.0f, -10.0f, 1.0f);
+	static XMVECTOR focus = XMVectorSet(0, 0, 0, 1);
 
 	//build projection matrix
-	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(45.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 1.0f, 100.0f);
+	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 1.0f, 100.0f);
 	
-	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
-	XMVECTOR focus = XMVectorSet(0, 0, 0, 1);
 	//build view matrix
+	static XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMMATRIX view = XMMatrixLookAtLH(XMVector3Transform(eyePos, XMMatrixRotationY(XMConvertToRadians(cameraAngle))), focus, up);
 	
 	static float angle = 0.0f;
@@ -188,15 +191,16 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX rotateX = XMMatrixRotationX(XMConvertToRadians(angle));
 	XMMATRIX rotateZ = XMMatrixRotationZ(XMConvertToRadians(angle));
 
-	XMMATRIX worldBox = rotateY * XMMatrixTranslation(-2, -2, 0);
-	XMMATRIX worldSphere = rotateY * XMMatrixTranslation(3.5f, -2, 0);
-	XMMATRIX worldTorus = rotateY * XMMatrixTranslation(-2, 2, 2);
-	XMMATRIX worldTeapot = rotateY * XMMatrixTranslation(4, 2, 0);
+	XMMATRIX worldBox = rotateY * XMMatrixTranslation(-2, 2, 0);
+	XMMATRIX worldTeapot = rotateY * XMMatrixTranslation(4, 2, 10);
+	XMMATRIX worldSphere = rotateY * XMMatrixTranslation(3.5f, 2, 0);
+	XMMATRIX worldTorus = rotateY * XMMatrixTranslation(-2, 1, 10);
 
 	XMMATRIX WVPBox = worldBox * viewProj;
 	XMMATRIX WVPSphere = worldSphere * viewProj;
 	XMMATRIX WVPTorus = worldTorus * viewProj;
 	XMMATRIX WVPTeapot = worldTeapot * viewProj;
+	XMMATRIX WVPGrid = viewProj;
 
 	XMStoreFloat4x4(&m_DrawableBox->WorldTransform, worldBox);
 	XMStoreFloat4x4(&m_DrawableBox->WorldViewProjTransform, WVPBox);
@@ -210,6 +214,9 @@ void DemoScene::UpdateScene(float dt)
 
 	XMStoreFloat4x4(&m_DrawableTeapot->WorldTransform, worldTeapot);
 	XMStoreFloat4x4(&m_DrawableTeapot->WorldViewProjTransform, WVPTeapot);
+
+	XMStoreFloat4x4(&m_DrawableGrid->WorldViewProjTransform, WVPGrid);
+	XMStoreFloat4x4(&m_DrawableGrid->TextureTransform, XMMatrixScaling(10.0f, 10.0f, 0.0f));
 
 	
 	//DirLightVector is updated by ImGui widget
@@ -269,7 +276,8 @@ void DemoScene::UpdateScene(float dt)
 
 	if (ImGui::CollapsingHeader("Camera"))
 	{
-		ImGui::DragFloat3("EyePos", reinterpret_cast<float*>(&eyePos), 1.0f, -100.0f, 100.0f);
+		ImGui::DragFloat3("EyePos", reinterpret_cast<float*>(&eyePos), 1.0f, -100.0f, 100.0f, "%.2f");
+		ImGui::DragFloat3("Focus", reinterpret_cast<float*>(&focus), 1.0f, -100.0f, 100.0f), "%.2f";
 		
 		if (XMVector3Equal(eyePos, XMVectorZero()))
 			eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
@@ -426,7 +434,18 @@ void DemoScene::UpdateScene(float dt)
 			ImGui::TreePop();
 		}
 	}
+	{
+		static bool bWireframe = false;
+		if (ImGui::CollapsingHeader("Render States"))
+		{
+			ImGui::Checkbox("Wireframe", &bWireframe);
+		}
 
+		if (bWireframe)
+			m_ImmediateContext->RSSetState(m_RSWireframe.Get());
+		else
+			m_ImmediateContext->RSSetState(nullptr);
+	}
 	ImGui::End();
 
 #pragma endregion
@@ -498,6 +517,7 @@ void DemoScene::DrawScene()
 		
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
+
 	m_ImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffff);
 	m_ImmediateContext->RSSetState(nullptr);
 	m_ImmediateContext->OMSetDepthStencilState(nullptr, 0);
