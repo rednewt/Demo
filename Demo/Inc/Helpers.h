@@ -2,6 +2,8 @@
 
 #include <DirectXMath.h>
 #include "Lights.h"
+#include <vector>
+#include "VertexTypes.h"
 
 namespace DX
 {
@@ -62,6 +64,11 @@ namespace Helpers
 
 		DX::ThrowIfFailed(device->CreateBuffer(&cbDesc, &cbData, outppBuffer));
 	}
+
+	//tessellation is number of vertices in each dimension
+	//so for tessellation of 8 -- 8*8 vertices will be generated
+	void CreateGrid(std::vector<DirectX::VertexPositionNormalTexture>& vertices, std::vector<uint16_t>& indices,
+		const uint16_t width, const uint16_t depth, uint16_t tessellation = 32);
 };
 
 

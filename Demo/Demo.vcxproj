@@ -99,6 +99,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>Inc\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>NotSet</SubSystem>
@@ -115,6 +116,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>Inc\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>NotSet</SubSystem>
@@ -133,6 +135,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>Inc\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>NotSet</SubSystem>
@@ -153,6 +156,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>Inc\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>NotSet</SubSystem>
@@ -185,6 +189,7 @@
     <ClInclude Include="Inc\Vertex.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Inc\Helpers.cpp" />
     <ClCompile Include="Src\DemoBase.cpp" />
     <ClCompile Include="Src\DemoScene.cpp" />
     <ClCompile Include="Src\imgui.cpp">
@@ -230,6 +235,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Src\Source.cpp" />
     <ClCompile Include="Src\Timer.cpp" />
     <ClCompile Include="Src\Vertex.cpp" />
   </ItemGroup>

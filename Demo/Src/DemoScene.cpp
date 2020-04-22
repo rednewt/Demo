@@ -29,6 +29,7 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableSphere = std::make_unique<Drawable>();
 	m_DrawableTorus = std::make_unique<Drawable>();
 	m_DrawableTeapot = std::make_unique<Drawable>();
+	m_DrawableGrid = std::make_unique<Drawable>();
 
 	//Setup DirectionalLight
 	m_CbPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
@@ -62,6 +63,9 @@ bool DemoScene::CreateDeviceDependentResources()
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\WireFence.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 
+	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\checkboard.dds", 0, m_DrawableGrid->TextureSRV.ReleaseAndGetAddressOf()))
+		return false;
+
 	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\metal.jpg", 0, m_DrawableSphere->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 
@@ -71,6 +75,7 @@ bool DemoScene::CreateDeviceDependentResources()
 	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\flooring.png", 0, m_DrawableTeapot->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 	
+
 	CD3D11_DEFAULT d3dDefault;
 	{
 		CD3D11_SAMPLER_DESC desc(d3dDefault);
@@ -133,6 +138,8 @@ void DemoScene::CreateBuffers()
 	GeometricPrimitive::CreateTeapot(vertices, indices, 3.0f, 8, false);
 	m_DrawableTeapot->Create(m_Device.Get(), vertices, indices);
 
+	Helpers::CreateGrid(vertices, indices, 50.0f, 50.0f);
+	m_DrawableGrid->Create(m_Device.Get(), vertices, indices);
 
 	Helpers::CreateConstantBuffer(m_Device.Get(), &m_CbPerFrameData, m_CbPerFrame.ReleaseAndGetAddressOf());
 	Helpers::CreateConstantBuffer(m_Device.Get(), &m_CbPerObjectData, m_CbPerObject.ReleaseAndGetAddressOf());
@@ -230,7 +237,7 @@ void DemoScene::UpdateScene(float dt)
 		ImGui::InputInt("Width", &inputWidth, 100, 200);
 		ImGui::InputInt("Height", &inputHeight, 100, 200);
 		
-		if (ImGui::Button("Resize"))
+		if (ImGui::Button("Apply"))
 		{
 			//Should probably clamp it on min/max values but works for now
 			if (inputWidth < MIN_WIDTH || inputHeight < MIN_HEIGHT ||
@@ -239,20 +246,24 @@ void DemoScene::UpdateScene(float dt)
 				inputWidth = MIN_WIDTH;
 				inputHeight = MIN_HEIGHT;
 			}
+			
+			if (inputWidth == m_ClientWidth && inputHeight == m_ClientHeight)
+				return;
 
 			//Calculate window size from client size
 			RECT wr = { 0, 0, inputWidth, inputHeight };
 			AdjustWindowRect(&wr, g_WindowStyle, 0);
 
-			UINT WindowWidth = static_cast<UINT>(wr.right - wr.left);
-			UINT WindowHeight = static_cast<UINT>(wr.bottom - wr.top);
+			UINT windowWidth = static_cast<UINT>(wr.right - wr.left);
+			UINT windowHeight = static_cast<UINT>(wr.bottom - wr.top);
 			
 			//Resize window area
-			assert(SetWindowPos(m_MainWindow, 0, 0, 0, WindowWidth, WindowHeight,
+			assert(SetWindowPos(m_MainWindow, 0, 0, 0, windowWidth, windowHeight,
 				SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER) != 0);
 			
 			//Resize color & depth buffers
 			Super::OnResize();
+
 		}
 	}
 
@@ -375,7 +386,7 @@ void DemoScene::UpdateScene(float dt)
 		}
 	}
 
-	if (ImGui::CollapsingHeader("Scene Objects"))
+	if (ImGui::CollapsingHeader("Object Materials"))
 	{
 		if (ImGui::TreeNode("Sphere"))
 		{
@@ -446,7 +457,7 @@ void DemoScene::DrawScene()
 	UINT stride = sizeof(GeometricPrimitive::VertexType);
 	UINT offset = 0;
 
-	static Drawable* drawables[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
+	static Drawable* drawables[] = { m_DrawableGrid.get(), m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
 
 	for (auto const& it : drawables)
 	{

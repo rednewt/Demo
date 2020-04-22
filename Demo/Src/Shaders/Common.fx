@@ -97,8 +97,8 @@ LightingOutput ComputeDirectionalLight(Material mat, DirectionalLight light, flo
 
 LightingOutput ComputePointLight(Material mat, PointLight light, float3 normal, float3 pixelPos, float3 toEyeVector)
 {
-    float3 lightPosToPixelVector = light.Position - pixelPos;
-    float vectorLength = length(lightPosToPixelVector);
+    float3 surfaceToLightVec = light.Position - pixelPos;
+    float vectorLength = length(surfaceToLightVec);
     
     LightingOutput result;
     
@@ -110,15 +110,15 @@ LightingOutput ComputePointLight(Material mat, PointLight light, float3 normal, 
         return result;
     
     //normalize the vector ourselves since we already computed length
-    lightPosToPixelVector /= vectorLength;
+    surfaceToLightVec /= vectorLength;
     
-    float diffuseIntensity = saturate(dot(lightPosToPixelVector, normal));
+    float diffuseIntensity = saturate(dot(surfaceToLightVec, normal));
     
     float specularIntensity = 0.0f;
     [flatten]
     if (diffuseIntensity > 0.0f)
     {
-        float3 reflectVector = reflect(-lightPosToPixelVector, normal);
+        float3 reflectVector = reflect(-surfaceToLightVec, normal);
         specularIntensity = pow(saturate(dot(reflectVector, toEyeVector)), mat.Specular.w);
     }
     
@@ -135,8 +135,8 @@ LightingOutput ComputePointLight(Material mat, PointLight light, float3 normal, 
 
 LightingOutput ComputeSpotLight(Material mat, SpotLight light, float3 normal, float3 pixelPos, float3 toEyeVector)
 {
-    float3 lightPosToPixelVector = light.Position - pixelPos;
-    float vectorLength = length(lightPosToPixelVector);
+    float3 surfaceToLightVec = light.Position - pixelPos;
+    float vectorLength = length(surfaceToLightVec);
     
     LightingOutput result;
     
@@ -148,19 +148,19 @@ LightingOutput ComputeSpotLight(Material mat, SpotLight light, float3 normal, fl
         return result;
     
     //normalize the vector ourselves since we already computed length
-    lightPosToPixelVector /= vectorLength;
+    surfaceToLightVec /= vectorLength;
     
-    float diffuseIntensity = saturate((dot(lightPosToPixelVector, normal)));
+    float diffuseIntensity = saturate((dot(surfaceToLightVec, normal)));
     
     float specularIntensity = 0.0f;
     [flatten]
     if (diffuseIntensity > 0.0f)
     {
-        float3 reflectVector = reflect(-lightPosToPixelVector, normal);
+        float3 reflectVector = reflect(-surfaceToLightVec, normal);
         specularIntensity = pow(saturate(dot(reflectVector, toEyeVector)), mat.Specular.w);
     }
     
-    float coneSpotIntensity = pow(saturate(dot(-light.Direction, lightPosToPixelVector)), light.SpotPower);
+    float coneSpotIntensity = pow(saturate(dot(-light.Direction, surfaceToLightVec)), light.SpotPower);
     //attenuation equation
     // 1 / ( a0 + a1*d + a2* d^2 )
     float att = 1.0f / dot(light.Attenuation, float3(1.0f, vectorLength, vectorLength * vectorLength));
