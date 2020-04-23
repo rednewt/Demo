@@ -79,7 +79,7 @@ struct Drawable
 		IndexCount(0), VertexCount(0),
 		IndexBufferFormat(DXGI_FORMAT_R16_UINT)
 	{
-		XMStoreFloat4x4(&WorldViewProjTransform, DirectX::XMMatrixIdentity());
+		XMStoreFloat4x4(&ViewProjTransform, DirectX::XMMatrixIdentity());
 		XMStoreFloat4x4(&WorldTransform, DirectX::XMMatrixIdentity());
 		XMStoreFloat4x4(&TextureTransform, DirectX::XMMatrixIdentity());
 	}
@@ -117,13 +117,24 @@ struct Drawable
 		DX::ThrowIfFailed(device->CreateBuffer(&ibDesc, &ibData, IndexBuffer.ReleaseAndGetAddressOf()));
 	}
 
+	DirectX::XMFLOAT4X4 GetWorldViewProj()
+	{
+		DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&WorldTransform);
+		DirectX::XMMATRIX viewProj = DirectX::XMLoadFloat4x4(&ViewProjTransform);
+
+		DirectX::XMFLOAT4X4 worldViewProj;
+		DirectX::XMStoreFloat4x4(&worldViewProj, world * viewProj);
+
+		return worldViewProj;
+	}
+
 	Microsoft::WRL::ComPtr<ID3D11Buffer> VertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> IndexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> TextureSRV;
 	uint32_t IndexCount;
 	uint32_t VertexCount;
 	DXGI_FORMAT IndexBufferFormat;
-	DirectX::XMFLOAT4X4 WorldViewProjTransform;
+	DirectX::XMFLOAT4X4 ViewProjTransform;
 	DirectX::XMFLOAT4X4 WorldTransform;
 	DirectX::XMFLOAT4X4 TextureTransform;
 	Material Material;

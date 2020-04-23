@@ -44,6 +44,7 @@ private:
 	std::unique_ptr<Drawable> m_DrawableTorus;
 	std::unique_ptr<Drawable> m_DrawableTeapot;
 	std::unique_ptr<Drawable> m_DrawableGrid;
+	std::unique_ptr<Drawable> m_DrawableMirror;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerObject;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerFrame;

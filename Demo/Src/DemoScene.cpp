@@ -30,6 +30,7 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableTorus = std::make_unique<Drawable>();
 	m_DrawableTeapot = std::make_unique<Drawable>();
 	m_DrawableGrid = std::make_unique<Drawable>();
+	m_DrawableMirror = std::make_unique<Drawable>();
 
 	//Setup DirectionalLight
 	m_CbPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
@@ -46,6 +47,7 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	m_DrawableTorus->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	m_DrawableTorus->Material.Ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.1f);
+	m_DrawableMirror->Material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
 }
 
 bool DemoScene::CreateDeviceDependentResources()
@@ -64,6 +66,9 @@ bool DemoScene::CreateDeviceDependentResources()
 		return false;
 
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\checkboard.dds", 0, m_DrawableGrid->TextureSRV.ReleaseAndGetAddressOf()))
+		return false;
+
+	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\ice.dds", 0, m_DrawableMirror->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 
 	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\metal.jpg", 0, m_DrawableSphere->TextureSRV.ReleaseAndGetAddressOf()))
@@ -141,6 +146,9 @@ void DemoScene::CreateBuffers()
 	GeometricPrimitive::CreateTeapot(vertices, indices, 3.0f, 8, false);
 	m_DrawableTeapot->Create(m_Device.Get(), vertices, indices);
 
+	GeometricPrimitive::CreateBox(vertices, indices, XMFLOAT3(0.1f, 5.0f, 20.0f), false);
+	m_DrawableMirror->Create(m_Device.Get(), vertices, indices);
+
 	Helpers::CreateGrid(vertices, indices, 100.0f, 100.0f);
 	m_DrawableGrid->Create(m_Device.Get(), vertices, indices);
 
@@ -195,30 +203,29 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX worldTeapot = rotateY * XMMatrixTranslation(4, 2, 10);
 	XMMATRIX worldSphere = rotateY * XMMatrixTranslation(3.5f, 2, 0);
 	XMMATRIX worldTorus = rotateY * XMMatrixTranslation(-2, 1, 10);
+	XMMATRIX worldMirror = XMMatrixTranslation(6.0f, 2.5f, 5.0f);
 
-	XMMATRIX WVPBox = worldBox * viewProj;
-	XMMATRIX WVPSphere = worldSphere * viewProj;
-	XMMATRIX WVPTorus = worldTorus * viewProj;
-	XMMATRIX WVPTeapot = worldTeapot * viewProj;
-	XMMATRIX WVPGrid = viewProj;
-
+	
 	XMStoreFloat4x4(&m_DrawableBox->WorldTransform, worldBox);
-	XMStoreFloat4x4(&m_DrawableBox->WorldViewProjTransform, WVPBox);
+	XMStoreFloat4x4(&m_DrawableBox->ViewProjTransform, viewProj);
 
 	XMStoreFloat4x4(&m_DrawableSphere->WorldTransform, worldSphere);
-	XMStoreFloat4x4(&m_DrawableSphere->WorldViewProjTransform, WVPSphere);
+	XMStoreFloat4x4(&m_DrawableSphere->ViewProjTransform, viewProj);
 	XMStoreFloat4x4(&m_DrawableSphere->TextureTransform, XMMatrixScaling(2.0f, 2.0f, 0.0f));
 
 	XMStoreFloat4x4(&m_DrawableTorus->WorldTransform, worldTorus);
-	XMStoreFloat4x4(&m_DrawableTorus->WorldViewProjTransform, WVPTorus);
+	XMStoreFloat4x4(&m_DrawableTorus->ViewProjTransform, viewProj);
 
 	XMStoreFloat4x4(&m_DrawableTeapot->WorldTransform, worldTeapot);
-	XMStoreFloat4x4(&m_DrawableTeapot->WorldViewProjTransform, WVPTeapot);
+	XMStoreFloat4x4(&m_DrawableTeapot->ViewProjTransform, viewProj);
 
-	XMStoreFloat4x4(&m_DrawableGrid->WorldViewProjTransform, WVPGrid);
+	XMStoreFloat4x4(&m_DrawableGrid->ViewProjTransform, viewProj);
 	XMStoreFloat4x4(&m_DrawableGrid->TextureTransform, XMMatrixScaling(10.0f, 10.0f, 0.0f));
 
-	
+	XMStoreFloat4x4(&m_DrawableMirror->WorldTransform, worldMirror);
+	XMStoreFloat4x4(&m_DrawableMirror->ViewProjTransform, viewProj);
+	XMStoreFloat4x4(&m_DrawableMirror->TextureTransform, XMMatrixScaling(2.0f, 1.0f, 0.0f));
+
 	//DirLightVector is updated by ImGui widget
 	static XMFLOAT3 dirLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
 	//SetDirection method will normalize the vector before setting it
@@ -480,7 +487,7 @@ void DemoScene::DrawScene()
 
 	for (auto const& it : drawables)
 	{
-		m_CbPerObjectData.WorldViewProj = it->WorldViewProjTransform;
+		m_CbPerObjectData.WorldViewProj = it->GetWorldViewProj();
 		m_CbPerObjectData.World = it->WorldTransform;
 		m_CbPerObjectData.TextureTransform = it->TextureTransform;
 		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(it->WorldTransform);
@@ -494,7 +501,34 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
 
-	static Drawable* transparentDrawables[] = {  m_DrawableBox.get() };
+	//======= reflect across the plane =======//
+
+	XMVECTOR plane = XMPlaneFromPointNormal(XMVectorSet(6.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
+	
+	for (auto const& it : drawables)
+	{
+		XMMATRIX reflectedWorld = XMLoadFloat4x4(&it->WorldTransform) * XMMatrixReflect(plane);
+		XMMATRIX reflectedWVP = reflectedWorld * XMLoadFloat4x4(&it->ViewProjTransform);
+
+		XMStoreFloat4x4(&m_CbPerObjectData.World, reflectedWorld);
+		XMStoreFloat4x4(&m_CbPerObjectData.WorldViewProj, reflectedWVP);
+
+		m_CbPerObjectData.TextureTransform = it->TextureTransform;
+		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(it->WorldTransform);
+		m_CbPerObjectData.Material = it->Material;
+
+		Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerObject.Get(), &m_CbPerObjectData);
+
+		m_ImmediateContext->PSSetShaderResources(0, 1, it->TextureSRV.GetAddressOf());
+		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
+		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
+		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
+	}
+
+
+	//=====================================================//
+
+	static Drawable* transparentDrawables[] = {   m_DrawableMirror.get(), m_DrawableBox.get() };
 	
 	float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), blendFactor, 0xffffffff);
@@ -503,7 +537,7 @@ void DemoScene::DrawScene()
 
 	for (auto const& it : transparentDrawables)
 	{
-		m_CbPerObjectData.WorldViewProj = it->WorldViewProjTransform;
+		m_CbPerObjectData.WorldViewProj = it->GetWorldViewProj();
 		m_CbPerObjectData.World = it->WorldTransform;
 		m_CbPerObjectData.TextureTransform = it->TextureTransform;
 		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(it->WorldTransform);

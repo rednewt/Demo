@@ -39,7 +39,7 @@ void Helpers::CreateGrid(std::vector<DirectX::VertexPositionNormalTexture>& vert
 		}
 	}
 
-	indices.resize(faceCount * 3);
+	indices.resize(quadCount * 6);
 
 	UINT k = 0;
 	for (int i = 0; i < tessellation - 1; ++i)
