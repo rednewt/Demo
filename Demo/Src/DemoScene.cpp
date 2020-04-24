@@ -505,22 +505,31 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
 
-	//======= reflect across the plane =======//
+	//======= reflect some objects across the plane ================================================================//
 
 	static Drawable* reflectedDrawables[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
 
-	XMVECTOR plane = XMPlaneFromPointNormal(XMVectorSet(6.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
+	XMVECTOR reflectPlane = XMPlaneFromPointNormal(XMVectorSet(6.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
+	XMMATRIX reflectionMatrix = XMMatrixReflect(reflectPlane);
+
+	//Reflect lights 
+	PS_ConstantBufferPerFrame reflectedCbPerFrameData = m_CbPerFrameData;
+	reflectedCbPerFrameData.DirLight = Helpers::GetReflectedLight(m_CbPerFrameData.DirLight, reflectionMatrix);
+	reflectedCbPerFrameData.PointLight = Helpers::GetReflectedLight(m_CbPerFrameData.PointLight, reflectionMatrix);
+	reflectedCbPerFrameData.SpotLight = Helpers::GetReflectedLight(m_CbPerFrameData.SpotLight, reflectionMatrix);
+	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &reflectedCbPerFrameData);
 	
+	//reflected triangles' winding order gets reversed, so setting counter clock wise as front facing
 	m_ImmediateContext->RSSetState(m_RSFrontCounterCW.Get());
+	//Now draw reflected objects
 	for (auto const& it : reflectedDrawables)
 	{
-		XMMATRIX reflectedWorld = XMLoadFloat4x4(&it->WorldTransform) * XMMatrixReflect(plane);
+		XMMATRIX reflectedWorld = XMLoadFloat4x4(&it->WorldTransform) * reflectionMatrix;
 		XMMATRIX reflectedWVP = reflectedWorld * XMLoadFloat4x4(&it->ViewProjTransform);
 
 		XMStoreFloat4x4(&m_CbPerObjectData.World, reflectedWorld);
 		XMStoreFloat4x4(&m_CbPerObjectData.WorldViewProj, reflectedWVP);
 		XMStoreFloat4x4(&m_CbPerObjectData.WorldInvTranspose, Helpers::ComputeInverseTranspose(reflectedWorld));
-
 		m_CbPerObjectData.TextureTransform = it->TextureTransform;
 		m_CbPerObjectData.Material = it->Material;
 
@@ -531,8 +540,13 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
+	//reset back to clock wise as front facing
 	m_ImmediateContext->RSSetState(nullptr);
-	//=====================================================//
+	
+	//Restore lights to their old positions/directions
+	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &m_CbPerFrameData);
+
+	//==============================================================================================================//
 
 	static Drawable* transparentDrawables[] = {   m_DrawableMirror.get(), m_DrawableBox.get() };
 	

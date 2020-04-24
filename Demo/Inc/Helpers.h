@@ -11,7 +11,6 @@ namespace DX
 	{
 		if (FAILED(hr))
 		{
-
 			throw std::exception();
 		}
 	}
@@ -79,6 +78,38 @@ namespace Helpers
 
 		DX::ThrowIfFailed(device->CreateBuffer(&cbDesc, nullptr, outppBuffer));
 	}
+
+	inline DirectionalLight GetReflectedLight(DirectionalLight& const light, DirectX::FXMMATRIX reflectionMatrix)
+	{
+		DirectionalLight reflected = light;
+		DirectX::XMVECTOR refDirection =  XMVector3TransformNormal(DirectX::XMLoadFloat3(&light.Direction), reflectionMatrix);
+		XMStoreFloat3(&reflected.Direction, refDirection);
+		
+		return reflected;
+	}
+
+	inline PointLight GetReflectedLight(PointLight& const light, DirectX::FXMMATRIX reflectionMatrix)
+	{
+		PointLight reflected = light;
+		DirectX::XMVECTOR refPosition = DirectX::XMVector3TransformCoord(DirectX::XMLoadFloat3(&light.Position), reflectionMatrix);
+		XMStoreFloat3(&reflected.Position, refPosition);
+
+		return reflected;
+	}
+
+	inline SpotLight GetReflectedLight(SpotLight& const light, DirectX::FXMMATRIX reflectionMatrix)
+	{
+		SpotLight reflected = light;
+		
+		DirectX::XMVECTOR refPosition = DirectX::XMVector3TransformCoord(DirectX::XMLoadFloat3(&light.Position), reflectionMatrix);
+		DirectX::XMVECTOR refDirection = XMVector3TransformNormal(DirectX::XMLoadFloat3(&light.Direction), reflectionMatrix);
+		
+		XMStoreFloat3(&reflected.Position, refPosition);
+		XMStoreFloat3(&reflected.Direction, refDirection);
+
+		return reflected;
+	}
+
 
 	//tessellation is number of vertices in each dimension
 	//so for tessellation of 8 -- 8*8 vertices will be generated
