@@ -11,6 +11,7 @@ namespace DX
 	{
 		if (FAILED(hr))
 		{
+
 			throw std::exception();
 		}
 	}
@@ -49,7 +50,7 @@ namespace Helpers
 	}
 
 	template<typename T>
-	inline void CreateConstantBuffer(ID3D11Device* const device, T* const pData, ID3D11Buffer** outppBuffer)
+	inline void CreateConstantBuffer(ID3D11Device* const device, T* const pInitialData, ID3D11Buffer** outppBuffer)
 	{
 		assert(device != nullptr);
 
@@ -60,9 +61,23 @@ namespace Helpers
 		cbDesc.ByteWidth = sizeof(T);
 
 		D3D11_SUBRESOURCE_DATA cbData = {};
-		cbData.pSysMem = pData;
-
+		cbData.pSysMem = pInitialData;
+		
 		DX::ThrowIfFailed(device->CreateBuffer(&cbDesc, &cbData, outppBuffer));
+	}
+
+	template<typename T>
+	inline void CreateConstantBuffer(ID3D11Device* const device, ID3D11Buffer** outppBuffer)
+	{
+		assert(device != nullptr);
+
+		D3D11_BUFFER_DESC cbDesc = {};
+		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		cbDesc.ByteWidth = sizeof(T);
+
+		DX::ThrowIfFailed(device->CreateBuffer(&cbDesc, nullptr, outppBuffer));
 	}
 
 	//tessellation is number of vertices in each dimension

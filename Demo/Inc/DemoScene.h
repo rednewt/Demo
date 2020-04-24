@@ -47,14 +47,15 @@ private:
 	std::unique_ptr<Drawable> m_DrawableMirror;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerObject;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerFrame;
 	VS_PS_ConstantBufferPerObject m_CbPerObjectData;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerFrame;
 	PS_ConstantBufferPerFrame m_CbPerFrameData;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSTransparent;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSCullNone;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSWireframe;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSFrontCounterCW;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSDisableWrite;
 public:
 	explicit DemoScene(const HWND& hwnd);

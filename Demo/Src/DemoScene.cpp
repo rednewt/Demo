@@ -115,6 +115,12 @@ bool DemoScene::CreateDeviceDependentResources()
 
 		if FAILED(m_Device->CreateRasterizerState(&desc, m_RSWireframe.ReleaseAndGetAddressOf()))
 			return false;
+
+		desc = CD3D11_RASTERIZER_DESC(d3dDefault);
+		desc.FrontCounterClockwise = TRUE;
+
+		if FAILED(m_Device->CreateRasterizerState(&desc, m_RSFrontCounterCW.ReleaseAndGetAddressOf()))
+			return false;
 	}
 	{
 		CD3D11_DEPTH_STENCIL_DESC desc(d3dDefault);
@@ -152,9 +158,8 @@ void DemoScene::CreateBuffers()
 	Helpers::CreateGrid(vertices, indices, 100.0f, 100.0f);
 	m_DrawableGrid->Create(m_Device.Get(), vertices, indices);
 
-	Helpers::CreateConstantBuffer(m_Device.Get(), &m_CbPerFrameData, m_CbPerFrame.ReleaseAndGetAddressOf());
-	Helpers::CreateConstantBuffer(m_Device.Get(), &m_CbPerObjectData, m_CbPerObject.ReleaseAndGetAddressOf());
-
+	Helpers::CreateConstantBuffer<PS_ConstantBufferPerFrame>(m_Device.Get(), m_CbPerFrame.ReleaseAndGetAddressOf());
+	Helpers::CreateConstantBuffer<VS_PS_ConstantBufferPerObject>(m_Device.Get(), m_CbPerObject.ReleaseAndGetAddressOf());
 }
 
 bool DemoScene::Initialize()
@@ -205,7 +210,6 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX worldTorus = rotateY * XMMatrixTranslation(-2, 1, 10);
 	XMMATRIX worldMirror = XMMatrixTranslation(6.0f, 2.5f, 5.0f);
 
-	
 	XMStoreFloat4x4(&m_DrawableBox->WorldTransform, worldBox);
 	XMStoreFloat4x4(&m_DrawableBox->ViewProjTransform, viewProj);
 
@@ -503,18 +507,21 @@ void DemoScene::DrawScene()
 
 	//======= reflect across the plane =======//
 
+	static Drawable* reflectedDrawables[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
+
 	XMVECTOR plane = XMPlaneFromPointNormal(XMVectorSet(6.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
 	
-	for (auto const& it : drawables)
+	m_ImmediateContext->RSSetState(m_RSFrontCounterCW.Get());
+	for (auto const& it : reflectedDrawables)
 	{
 		XMMATRIX reflectedWorld = XMLoadFloat4x4(&it->WorldTransform) * XMMatrixReflect(plane);
 		XMMATRIX reflectedWVP = reflectedWorld * XMLoadFloat4x4(&it->ViewProjTransform);
 
 		XMStoreFloat4x4(&m_CbPerObjectData.World, reflectedWorld);
 		XMStoreFloat4x4(&m_CbPerObjectData.WorldViewProj, reflectedWVP);
+		XMStoreFloat4x4(&m_CbPerObjectData.WorldInvTranspose, Helpers::ComputeInverseTranspose(reflectedWorld));
 
 		m_CbPerObjectData.TextureTransform = it->TextureTransform;
-		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(it->WorldTransform);
 		m_CbPerObjectData.Material = it->Material;
 
 		Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerObject.Get(), &m_CbPerObjectData);
@@ -524,8 +531,7 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
-
-
+	m_ImmediateContext->RSSetState(nullptr);
 	//=====================================================//
 
 	static Drawable* transparentDrawables[] = {   m_DrawableMirror.get(), m_DrawableBox.get() };
