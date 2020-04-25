@@ -12,8 +12,8 @@ void Helpers::CreateGrid(std::vector<DirectX::VertexPositionNormalTexture>& vert
 	UINT quadCount = (tessellation - 1) * (tessellation - 1);
 	UINT faceCount = quadCount * 2;
 
-	float quadSizeX = width / (tessellation - 1);
-	float quadSizeZ = depth / (tessellation - 1);
+	float quadSizeX = static_cast<float>(width / (tessellation - 1));
+	float quadSizeZ = static_cast<float>(depth / (tessellation - 1));
 
 	float quadU = 1.0f / (tessellation - 1);
 	float quadV = 1.0f / (tessellation - 1);

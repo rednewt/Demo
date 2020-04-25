@@ -2,8 +2,13 @@
 
 #include "DemoBase.h"
 
-namespace
+struct Drawable;
+class DebugDrawable;
+
+class DemoScene : public DemoBase
 {
+private:
+	using Super = DemoBase;
 	struct VS_PS_ConstantBufferPerObject
 	{
 		DirectX::XMFLOAT4X4 WorldViewProj;
@@ -12,7 +17,6 @@ namespace
 		DirectX::XMFLOAT4X4 TextureTransform;
 		Material Material;
 	};
-
 	struct PS_ConstantBufferPerFrame
 	{
 		DirectionalLight DirLight;
@@ -24,16 +28,8 @@ namespace
 
 		FogProperties Fog;
 	};
-
 	static_assert(sizeof(PS_ConstantBufferPerFrame) % 16 == 0, "PS_ConstantBufferPerFrame struct not 16-byte aligned");
 	static_assert(sizeof(VS_PS_ConstantBufferPerObject) % 16 == 0, "VS_PS_ConstantBufferPerObject struct not 16-byte aligned");
-
-}
-
-class DemoScene : public DemoBase
-{
-private:
-	using Super = DemoBase;
 
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> m_SimpleVertexShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_SimplePixelShader;
@@ -51,12 +47,17 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerFrame;
 	PS_ConstantBufferPerFrame m_CbPerFrameData;
 
+	std::unique_ptr<DebugDrawable> m_PointLightDebug;
+
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSTransparent;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSCullNone;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSWireframe;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSFrontCounterCW;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSDisableWrite;
+
+	DirectX::XMFLOAT4X4 m_CameraView;
+	DirectX::XMFLOAT4X4 m_CameraProjection;
 public:
 	explicit DemoScene(const HWND& hwnd);
 	DemoScene(const DemoScene&) = delete;

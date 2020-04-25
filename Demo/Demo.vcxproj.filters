@@ -25,6 +25,9 @@
     <Filter Include="Source Files\imgui">
       <UniqueIdentifier>{35a9d8fc-0008-4f2f-8aa8-0bbaaf2ac299}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Debug">
+      <UniqueIdentifier>{53821536-f03f-4260-bdb4-31f09a534bb7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -79,6 +82,9 @@
     <ClInclude Include="Inc\Lights.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Inc\Drawable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\DemoBase.cpp">
@@ -120,6 +126,9 @@
     <ClCompile Include="Inc\Helpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Src\Drawable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Src\Shaders\PixelShader.hlsl">
@@ -127,6 +136,12 @@
     </FxCompile>
     <FxCompile Include="Src\Shaders\VertexShader.hlsl">
       <Filter>Shaders\Basic</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Shaders\DebugPS.hlsl">
+      <Filter>Shaders\Debug</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Shaders\DebugVS.hlsl">
+      <Filter>Shaders\Debug</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
+#include "Drawable.h"
 
 //Used in AdjustWindowRect(..) while resizing 
 extern DWORD g_WindowStyle;
@@ -46,12 +47,14 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableSphere->Material.Ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	m_DrawableTorus->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
-	m_DrawableTorus->Material.Ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.1f);
 	m_DrawableMirror->Material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
 }
 
 bool DemoScene::CreateDeviceDependentResources()
 {
+	Helpers::CreateConstantBuffer<PS_ConstantBufferPerFrame>(m_Device.Get(), m_CbPerFrame.ReleaseAndGetAddressOf());
+	Helpers::CreateConstantBuffer<VS_PS_ConstantBufferPerObject>(m_Device.Get(), m_CbPerObject.ReleaseAndGetAddressOf());
+
 	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount, g_VSBasicShader, sizeof(g_VSBasicShader), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
 		return false;
 
@@ -155,11 +158,10 @@ void DemoScene::CreateBuffers()
 	GeometricPrimitive::CreateBox(vertices, indices, XMFLOAT3(0.1f, 5.0f, 20.0f), false);
 	m_DrawableMirror->Create(m_Device.Get(), vertices, indices);
 
-	Helpers::CreateGrid(vertices, indices, 100.0f, 100.0f);
+	Helpers::CreateGrid(vertices, indices, 100, 100);
 	m_DrawableGrid->Create(m_Device.Get(), vertices, indices);
 
-	Helpers::CreateConstantBuffer<PS_ConstantBufferPerFrame>(m_Device.Get(), m_CbPerFrame.ReleaseAndGetAddressOf());
-	Helpers::CreateConstantBuffer<VS_PS_ConstantBufferPerObject>(m_Device.Get(), m_CbPerObject.ReleaseAndGetAddressOf());
+	
 }
 
 bool DemoScene::Initialize()
@@ -167,15 +169,12 @@ bool DemoScene::Initialize()
 	if (!Super::Initialize())
 		return false;
 	
-	Super::ImGui_Init();
-
 	if (!CreateDeviceDependentResources())
 		return false;
 
-	m_ImmediateContext->IASetInputLayout(m_SimpleVertexLayout.Get());
-	m_ImmediateContext->VSSetShader(m_SimpleVertexShader.Get(), nullptr, 0);
-	m_ImmediateContext->PSSetShader(m_SimplePixelShader.Get(), nullptr, 0);
-	m_ImmediateContext->PSSetSamplers(0, 1, m_SamplerAnisotropic.GetAddressOf());
+	Super::ImGui_Init();
+
+	m_PointLightDebug = DebugDrawable::Create(m_Device.Get(), DebugDrawable::Shape::SPHERE);
 
 	return true;
 }
@@ -191,11 +190,12 @@ void DemoScene::UpdateScene(float dt)
 
 	//build projection matrix
 	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 1.0f, 100.0f);
-	
+	XMStoreFloat4x4(&m_CameraProjection, proj);
 	//build view matrix
 	static XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMMATRIX view = XMMatrixLookAtLH(XMVector3Transform(eyePos, XMMatrixRotationY(XMConvertToRadians(cameraAngle))), focus, up);
-	
+	XMStoreFloat4x4(&m_CameraView, view);
+
 	static float angle = 0.0f;
 	angle += 45.0f * dt;
 	
@@ -369,7 +369,7 @@ void DemoScene::UpdateScene(float dt)
 			ImGui::ColorEdit4("Ambient##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Ambient), 2);
 			ImGui::ColorEdit4("Diffuse##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Diffuse), 2);
 			ImGui::ColorEdit3("Specular##2", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Specular), 2);
-			ImGui::InputFloat3("Position##1", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Position), 2);
+			ImGui::DragFloat3("Position##1", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Position));
 			ImGui::InputFloat("Range##1", &m_CbPerFrameData.PointLight.Range, 2);
 			ImGui::InputFloat3("Attenuation##1", reinterpret_cast<float*>(&m_CbPerFrameData.PointLight.Attenuation), 2);
 
@@ -395,7 +395,7 @@ void DemoScene::UpdateScene(float dt)
 			ImGui::ColorEdit4("Ambient##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Ambient), 2);
 			ImGui::ColorEdit4("Diffuse##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Diffuse), 2);
 			ImGui::ColorEdit3("Specular##5", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Specular), 2);
-			ImGui::InputFloat3("Position##2", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Position), 2);
+			ImGui::DragFloat3("Position##2", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Position));
 			ImGui::InputFloat("Range##2", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Range), 2);
 			ImGui::InputFloat("SpotPower", &m_CbPerFrameData.SpotLight.SpotPower, 2);
 			ImGui::InputFloat3("Direction##2", reinterpret_cast<float*>(&m_CbPerFrameData.SpotLight.Direction), 2);
@@ -477,6 +477,16 @@ void DemoScene::Clear()
 void DemoScene::DrawScene()
 {
 	Clear();
+
+	m_PointLightDebug->Draw(m_ImmediateContext.Get(),
+		XMMatrixTranslationFromVector(XMLoadFloat3(&m_CbPerFrameData.PointLight.Position)) * 
+		XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection),
+		XMLoadFloat4(&m_CbPerFrameData.PointLight.Diffuse));
+
+	m_ImmediateContext->IASetInputLayout(m_SimpleVertexLayout.Get());
+	m_ImmediateContext->VSSetShader(m_SimpleVertexShader.Get(), nullptr, 0);
+	m_ImmediateContext->PSSetShader(m_SimplePixelShader.Get(), nullptr, 0);
+	m_ImmediateContext->PSSetSamplers(0, 1, m_SamplerAnisotropic.GetAddressOf());
 
 	//Bind CbPerObject (slot: 0) to VS & PS
 	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
