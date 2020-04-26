@@ -1,6 +1,6 @@
 #pragma once
 
-//Helper struct quickly put together to draw scene with decent number of objects
+//Helper struct quickly put together to make code a bit cleaner while drawing
 struct Drawable
 {
 	~Drawable() = default;
@@ -10,7 +10,6 @@ struct Drawable
 		IndexCount(0), VertexCount(0),
 		IndexBufferFormat(DXGI_FORMAT_R16_UINT)
 	{
-		XMStoreFloat4x4(&ViewProjTransform, DirectX::XMMatrixIdentity());
 		XMStoreFloat4x4(&WorldTransform, DirectX::XMMatrixIdentity());
 		XMStoreFloat4x4(&TextureTransform, DirectX::XMMatrixIdentity());
 	}
@@ -27,37 +26,11 @@ struct Drawable
 		else
 			static_assert(sizeof(IndexType) == 2, "Unknown index buffer format");
 
-		D3D11_BUFFER_DESC vbDesc = {};
-		vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		vbDesc.ByteWidth = sizeof(VertexType) * VertexCount;
-		vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-
-		D3D11_SUBRESOURCE_DATA vbData = {};
-		vbData.pSysMem = vertices.data();
-
-		DX::ThrowIfFailed(device->CreateBuffer(&vbDesc, &vbData, VertexBuffer.ReleaseAndGetAddressOf()));
-
-		D3D11_BUFFER_DESC ibDesc = {};
-		ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		ibDesc.ByteWidth = sizeof(IndexType) * IndexCount;
-		ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-
-		D3D11_SUBRESOURCE_DATA ibData = {};
-		ibData.pSysMem = indices.data();
-
-		DX::ThrowIfFailed(device->CreateBuffer(&ibDesc, &ibData, IndexBuffer.ReleaseAndGetAddressOf()));
+		Helpers::CreateBuffer(device, vertices, D3D11_BIND_VERTEX_BUFFER, VertexBuffer.ReleaseAndGetAddressOf());
+		Helpers::CreateBuffer(device, indices, D3D11_BIND_INDEX_BUFFER, IndexBuffer.ReleaseAndGetAddressOf());
 	}
 
-	DirectX::XMFLOAT4X4 GetWorldViewProj()
-	{
-		DirectX::XMMATRIX world = DirectX::XMLoadFloat4x4(&WorldTransform);
-		DirectX::XMMATRIX viewProj = DirectX::XMLoadFloat4x4(&ViewProjTransform);
-
-		DirectX::XMFLOAT4X4 worldViewProj;
-		DirectX::XMStoreFloat4x4(&worldViewProj, world * viewProj);
-
-		return worldViewProj;
-	}
+	DirectX::XMMATRIX GetWorld() const { return XMLoadFloat4x4(&WorldTransform); }
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> VertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> IndexBuffer;
@@ -65,7 +38,6 @@ struct Drawable
 	uint32_t IndexCount;
 	uint32_t VertexCount;
 	DXGI_FORMAT IndexBufferFormat;
-	DirectX::XMFLOAT4X4 ViewProjTransform;
 	DirectX::XMFLOAT4X4 WorldTransform;
 	DirectX::XMFLOAT4X4 TextureTransform;
 	Material Material;
@@ -76,8 +48,8 @@ class DebugDrawable
 public:
 	enum class Shape
 	{
-		CUBE,
-		SPHERE
+		Cube,
+		Sphere
 	};
 
 	~DebugDrawable() = default;
@@ -88,7 +60,7 @@ public:
 
 	void Draw(ID3D11DeviceContext* context, DirectX::FXMMATRIX worldViewProj, DirectX::FXMVECTOR objectColor = DirectX::Colors::White.v);
 private:
-	DebugDrawable() = default;
+	DebugDrawable();
 
 	struct VS_PS_CbConstants
 	{
@@ -107,5 +79,5 @@ private:
 	static Microsoft::WRL::ComPtr<ID3D11InputLayout> m_InputLayout;
 
 	VS_PS_CbConstants m_CbConstantsData;
-	uint16_t IndexCount;
+	uint16_t m_IndexCount;
 };

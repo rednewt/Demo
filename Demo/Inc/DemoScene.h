@@ -35,6 +35,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_SimplePixelShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_SimpleVertexLayout;
 
+	std::unique_ptr<DebugDrawable> m_LightSphere;
+
 	std::unique_ptr<Drawable> m_DrawableBox;
 	std::unique_ptr<Drawable> m_DrawableSphere;
 	std::unique_ptr<Drawable> m_DrawableTorus;
@@ -46,8 +48,6 @@ private:
 	VS_PS_ConstantBufferPerObject m_CbPerObjectData;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerFrame;
 	PS_ConstantBufferPerFrame m_CbPerFrameData;
-
-	std::unique_ptr<DebugDrawable> m_PointLightDebug;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSTransparent;

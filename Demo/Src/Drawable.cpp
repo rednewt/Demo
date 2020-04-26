@@ -16,20 +16,29 @@ namespace
 	#include "Shaders\Compiled\DebugVS.h"
 }
 
+DebugDrawable::DebugDrawable() :
+	m_IndexCount(0)
+{
+	m_CbConstantsData = {};
+}
+
+//TODO:
+//Save Memory --
+//Since only limited number of primitives (Shapes) can be drawn, there is no point in
+//creating different vertex/index/constant buffers each time in Create()
+
 std::unique_ptr<DebugDrawable> DebugDrawable::Create(ID3D11Device* device, Shape shape)
 {
 	assert(device != nullptr);
 
 	if (!m_InputLayout.Get())
 		device->CreateInputLayout(SimpleVertex::InputElements, SimpleVertex::ElementCount, g_DebugVS, sizeof(g_DebugVS), m_InputLayout.ReleaseAndGetAddressOf());
+	
 	if (!m_VertexShader.Get())
 		device->CreateVertexShader(g_DebugVS, sizeof(g_DebugVS), nullptr, m_VertexShader.ReleaseAndGetAddressOf());
+	
 	if (!m_PixelShader.Get())
 		device->CreatePixelShader(g_DebugPS, sizeof(g_DebugPS), nullptr, m_PixelShader.ReleaseAndGetAddressOf());
-
-	std::unique_ptr<DebugDrawable> pObj(new DebugDrawable());
-	
-	Helpers::CreateConstantBuffer<VS_PS_CbConstants>(device, pObj->m_CbConstants.ReleaseAndGetAddressOf());
 
 	std::vector<SimpleVertex> vertices;
 	std::vector<uint16_t> indices;
@@ -37,17 +46,15 @@ std::unique_ptr<DebugDrawable> DebugDrawable::Create(ID3D11Device* device, Shape
 
 	switch (shape)
 	{
-	case Shape::CUBE:	
+	case Shape::Cube:	
 		GeometricPrimitive::CreateCube(tempVertices, indices, 0.5f, false);
 		break;
-	case Shape::SPHERE:
+	case Shape::Sphere:
 		GeometricPrimitive::CreateSphere(tempVertices, indices, 0.5f, 16, false);
 		break;
 	default:
 		return nullptr;
 	}
-
-	pObj->IndexCount = static_cast<uint16_t>(indices.size());
 
 	for (auto const& vertex : tempVertices)
 	{
@@ -56,25 +63,11 @@ std::unique_ptr<DebugDrawable> DebugDrawable::Create(ID3D11Device* device, Shape
 		vertices.push_back(v);
 	}
 
-	D3D11_BUFFER_DESC vbDesc = {};
-	vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	vbDesc.ByteWidth = sizeof(SimpleVertex) * vertices.size();
-	vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-
-	D3D11_SUBRESOURCE_DATA vbData = {};
-	vbData.pSysMem = vertices.data();
-
-	DX::ThrowIfFailed(device->CreateBuffer(&vbDesc, &vbData, pObj->m_VertexBuffer.ReleaseAndGetAddressOf()));
-
-	D3D11_BUFFER_DESC ibDesc = {};
-	ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	ibDesc.ByteWidth = sizeof(uint16_t) * indices.size();
-	ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-
-	D3D11_SUBRESOURCE_DATA ibData = {};
-	ibData.pSysMem = indices.data();
-
-	DX::ThrowIfFailed(device->CreateBuffer(&ibDesc, &ibData, pObj->m_IndexBuffer.ReleaseAndGetAddressOf()));
+	std::unique_ptr<DebugDrawable> pObj(new DebugDrawable());
+	pObj->m_IndexCount = static_cast<uint16_t>(indices.size());
+	Helpers::CreateConstantBuffer<VS_PS_CbConstants>(device, pObj->m_CbConstants.ReleaseAndGetAddressOf());
+	Helpers::CreateBuffer(device, vertices, D3D11_BIND_VERTEX_BUFFER, pObj->m_VertexBuffer.ReleaseAndGetAddressOf());
+	Helpers::CreateBuffer(device, indices, D3D11_BIND_INDEX_BUFFER, pObj->m_IndexBuffer.ReleaseAndGetAddressOf());
 
 	return pObj;
 }
@@ -86,7 +79,7 @@ void DebugDrawable::Draw(ID3D11DeviceContext* context, FXMMATRIX worldViewProj, 
 	XMStoreFloat4x4(&m_CbConstantsData.WorldViewProj, worldViewProj);
 	XMStoreFloat4(&m_CbConstantsData.Color, objectColor);
 
-	Helpers::UpdateConstantBuffer<VS_PS_CbConstants>(context, m_CbConstants.Get(), &m_CbConstantsData);
+	Helpers::UpdateConstantBuffer(context, m_CbConstants.Get(), &m_CbConstantsData);
 
 	context->IASetInputLayout(DebugDrawable::m_InputLayout.Get());
 	context->VSSetShader(DebugDrawable::m_VertexShader.Get(), nullptr, 0);
@@ -99,5 +92,5 @@ void DebugDrawable::Draw(ID3D11DeviceContext* context, FXMMATRIX worldViewProj, 
 	UINT stride = sizeof(SimpleVertex);
 	UINT offset = 0;
 	context->IASetVertexBuffers(0, 1, m_VertexBuffer.GetAddressOf(), &stride, &offset);
-	context->DrawIndexed(IndexCount, 0, 0);
+	context->DrawIndexed(m_IndexCount, 0, 0);
 }

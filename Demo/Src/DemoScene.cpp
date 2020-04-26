@@ -161,7 +161,6 @@ void DemoScene::CreateBuffers()
 	Helpers::CreateGrid(vertices, indices, 100, 100);
 	m_DrawableGrid->Create(m_Device.Get(), vertices, indices);
 
-	
 }
 
 bool DemoScene::Initialize()
@@ -174,7 +173,7 @@ bool DemoScene::Initialize()
 
 	Super::ImGui_Init();
 
-	m_PointLightDebug = DebugDrawable::Create(m_Device.Get(), DebugDrawable::Shape::SPHERE);
+	m_LightSphere = DebugDrawable::Create(m_Device.Get(), DebugDrawable::Shape::Sphere);
 
 	return true;
 }
@@ -211,23 +210,17 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX worldMirror = XMMatrixTranslation(6.0f, 2.5f, 5.0f);
 
 	XMStoreFloat4x4(&m_DrawableBox->WorldTransform, worldBox);
-	XMStoreFloat4x4(&m_DrawableBox->ViewProjTransform, viewProj);
-
+	
 	XMStoreFloat4x4(&m_DrawableSphere->WorldTransform, worldSphere);
-	XMStoreFloat4x4(&m_DrawableSphere->ViewProjTransform, viewProj);
 	XMStoreFloat4x4(&m_DrawableSphere->TextureTransform, XMMatrixScaling(2.0f, 2.0f, 0.0f));
-
+	
 	XMStoreFloat4x4(&m_DrawableTorus->WorldTransform, worldTorus);
-	XMStoreFloat4x4(&m_DrawableTorus->ViewProjTransform, viewProj);
-
+	
 	XMStoreFloat4x4(&m_DrawableTeapot->WorldTransform, worldTeapot);
-	XMStoreFloat4x4(&m_DrawableTeapot->ViewProjTransform, viewProj);
-
-	XMStoreFloat4x4(&m_DrawableGrid->ViewProjTransform, viewProj);
+	
 	XMStoreFloat4x4(&m_DrawableGrid->TextureTransform, XMMatrixScaling(10.0f, 10.0f, 0.0f));
 
 	XMStoreFloat4x4(&m_DrawableMirror->WorldTransform, worldMirror);
-	XMStoreFloat4x4(&m_DrawableMirror->ViewProjTransform, viewProj);
 	XMStoreFloat4x4(&m_DrawableMirror->TextureTransform, XMMatrixScaling(2.0f, 1.0f, 0.0f));
 
 	//DirLightVector is updated by ImGui widget
@@ -478,10 +471,14 @@ void DemoScene::DrawScene()
 {
 	Clear();
 
-	m_PointLightDebug->Draw(m_ImmediateContext.Get(),
-		XMMatrixTranslationFromVector(XMLoadFloat3(&m_CbPerFrameData.PointLight.Position)) * 
-		XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection),
-		XMLoadFloat4(&m_CbPerFrameData.PointLight.Diffuse));
+	XMFLOAT3 lightPositions[] = { m_CbPerFrameData.PointLight.Position, m_CbPerFrameData.SpotLight.Position };
+	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
+
+	for (auto const& pos : lightPositions)
+	{
+		XMMATRIX WVP = XMMatrixTranslation(pos.x, pos.y, pos.z) * viewProj;
+		m_LightSphere->Draw(m_ImmediateContext.Get(), WVP);
+	}
 
 	m_ImmediateContext->IASetInputLayout(m_SimpleVertexLayout.Get());
 	m_ImmediateContext->VSSetShader(m_SimpleVertexShader.Get(), nullptr, 0);
@@ -501,7 +498,7 @@ void DemoScene::DrawScene()
 
 	for (auto const& it : drawables)
 	{
-		m_CbPerObjectData.WorldViewProj = it->GetWorldViewProj();
+		m_CbPerObjectData.WorldViewProj = Helpers::XMMatrixToStorage(it->GetWorld() * viewProj);
 		m_CbPerObjectData.World = it->WorldTransform;
 		m_CbPerObjectData.TextureTransform = it->TextureTransform;
 		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(it->WorldTransform);
@@ -535,7 +532,7 @@ void DemoScene::DrawScene()
 	for (auto const& it : reflectedDrawables)
 	{
 		XMMATRIX reflectedWorld = XMLoadFloat4x4(&it->WorldTransform) * reflectionMatrix;
-		XMMATRIX reflectedWVP = reflectedWorld * XMLoadFloat4x4(&it->ViewProjTransform);
+		XMMATRIX reflectedWVP = reflectedWorld * viewProj;
 
 		XMStoreFloat4x4(&m_CbPerObjectData.World, reflectedWorld);
 		XMStoreFloat4x4(&m_CbPerObjectData.WorldViewProj, reflectedWVP);
@@ -556,7 +553,7 @@ void DemoScene::DrawScene()
 	//Restore lights to their old positions/directions
 	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &m_CbPerFrameData);
 
-	//==============================================================================================================//
+	//============================================================================================================//
 
 	static Drawable* transparentDrawables[] = {   m_DrawableMirror.get(), m_DrawableBox.get() };
 	
@@ -567,7 +564,7 @@ void DemoScene::DrawScene()
 
 	for (auto const& it : transparentDrawables)
 	{
-		m_CbPerObjectData.WorldViewProj = it->GetWorldViewProj();
+		m_CbPerObjectData.WorldViewProj = Helpers::XMMatrixToStorage(it->GetWorld() * viewProj);
 		m_CbPerObjectData.World = it->WorldTransform;
 		m_CbPerObjectData.TextureTransform = it->TextureTransform;
 		m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(it->WorldTransform);

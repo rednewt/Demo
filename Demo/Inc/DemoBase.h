@@ -36,10 +36,8 @@ protected:
 	DXGI_FORMAT m_BackBufferFormat;
 	DXGI_FORMAT m_DepthStencilBufferFormat;
 	DXGI_FORMAT m_DepthStencilViewFormat;
+	
 public:
-	DemoBase(const HWND& hwnd);
-	virtual ~DemoBase();
-
 	virtual bool Initialize();
 	virtual void OnResize();
 
@@ -47,6 +45,9 @@ public:
 	virtual void DrawScene() = 0;
 
 protected:
+	DemoBase(const HWND& hwnd);
+	virtual ~DemoBase();
+
 	void ImGui_NewFrame();
 	void ImGui_Init();
 	void ImGui_Destroy();

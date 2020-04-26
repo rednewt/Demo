@@ -37,32 +37,37 @@ namespace Helpers
 		return f;
 	}
 
-	template<typename T>
-	inline void UpdateConstantBuffer(ID3D11DeviceContext* const ctx, ID3D11Buffer* const cbuffer, T* const pData)
+	inline DirectX::XMFLOAT4X4 XMMatrixToStorage(DirectX::FXMMATRIX m)
 	{
-		assert(ctx != nullptr);
+		DirectX::XMFLOAT4X4 f;
+		XMStoreFloat4x4(&f, m);
 
-		D3D11_MAPPED_SUBRESOURCE mappedRes;
-		DX::ThrowIfFailed(ctx->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes));
-		memcpy(mappedRes.pData, pData, sizeof(T));
-		ctx->Unmap(cbuffer, 0);
+		return f;
 	}
 
 	template<typename T>
-	inline void CreateConstantBuffer(ID3D11Device* const device, T* const pInitialData, ID3D11Buffer** outppBuffer)
+	inline void UpdateConstantBuffer(ID3D11DeviceContext* const context, ID3D11Buffer* const cbuffer, T* const pData)
 	{
-		assert(device != nullptr);
+		assert(context != nullptr);
 
-		D3D11_BUFFER_DESC cbDesc = {};
-		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		cbDesc.ByteWidth = sizeof(T);
+		D3D11_MAPPED_SUBRESOURCE mappedRes;
+		DX::ThrowIfFailed(context->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes));
+		memcpy(mappedRes.pData, pData, sizeof(T));
+		context->Unmap(cbuffer, 0);
+	}
 
-		D3D11_SUBRESOURCE_DATA cbData = {};
-		cbData.pSysMem = pInitialData;
+	template<typename T>
+	inline void CreateBuffer(ID3D11Device* const device, std::vector<T> data, D3D11_BIND_FLAG bindFlag, ID3D11Buffer** outppBuffer)
+	{
+		D3D11_BUFFER_DESC desc = {};
+		desc.Usage = D3D11_USAGE_IMMUTABLE;
+		desc.ByteWidth = sizeof(T) * data.size();
+		desc.BindFlags = bindFlag;
 		
-		DX::ThrowIfFailed(device->CreateBuffer(&cbDesc, &cbData, outppBuffer));
+		D3D11_SUBRESOURCE_DATA initData = {};
+		initData.pSysMem = data.data();
+
+		DX::ThrowIfFailed(device->CreateBuffer(&desc, &initData, outppBuffer));
 	}
 
 	template<typename T>
@@ -79,7 +84,7 @@ namespace Helpers
 		DX::ThrowIfFailed(device->CreateBuffer(&cbDesc, nullptr, outppBuffer));
 	}
 
-	inline DirectionalLight GetReflectedLight(DirectionalLight& const light, DirectX::FXMMATRIX reflectionMatrix)
+	inline DirectionalLight GetReflectedLight(const DirectionalLight& light, DirectX::FXMMATRIX reflectionMatrix)
 	{
 		DirectionalLight reflected = light;
 		DirectX::XMVECTOR refDirection =  XMVector3TransformNormal(DirectX::XMLoadFloat3(&light.Direction), reflectionMatrix);
@@ -88,7 +93,7 @@ namespace Helpers
 		return reflected;
 	}
 
-	inline PointLight GetReflectedLight(PointLight& const light, DirectX::FXMMATRIX reflectionMatrix)
+	inline PointLight GetReflectedLight(const PointLight& light, DirectX::FXMMATRIX reflectionMatrix)
 	{
 		PointLight reflected = light;
 		DirectX::XMVECTOR refPosition = DirectX::XMVector3TransformCoord(DirectX::XMLoadFloat3(&light.Position), reflectionMatrix);
@@ -97,7 +102,7 @@ namespace Helpers
 		return reflected;
 	}
 
-	inline SpotLight GetReflectedLight(SpotLight& const light, DirectX::FXMMATRIX reflectionMatrix)
+	inline SpotLight GetReflectedLight(const SpotLight& light, DirectX::FXMMATRIX reflectionMatrix)
 	{
 		SpotLight reflected = light;
 		
