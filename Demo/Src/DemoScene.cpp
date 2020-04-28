@@ -38,11 +38,11 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	//Setup Pointlight
 	m_CbPerFrameData.PointLight.Position = XMFLOAT3(0.0f, 2.0f, -2.0f);
 	//Setup Spotlight
-	m_CbPerFrameData.SpotLight.Position = XMFLOAT3(2.0f, -2.0f, -7.0f);
+	m_CbPerFrameData.SpotLight.Position = XMFLOAT3(-6.0f, 4.0f, 6.0f);
 	m_CbPerFrameData.SpotLight.Direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
 	m_CbPerFrameData.SpotLight.SpotPower = 2.0f;
 
-	//Setup Materials
+	//Setup some Materials
 	m_DrawableBox->Material.Ambient = XMFLOAT4(0.35f, 0.35f, 0.35f, 1.0f);
 	m_DrawableSphere->Material.Ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
@@ -55,13 +55,13 @@ bool DemoScene::CreateDeviceDependentResources()
 	Helpers::CreateConstantBuffer<PS_ConstantBufferPerFrame>(m_Device.Get(), m_CbPerFrame.ReleaseAndGetAddressOf());
 	Helpers::CreateConstantBuffer<VS_PS_ConstantBufferPerObject>(m_Device.Get(), m_CbPerObject.ReleaseAndGetAddressOf());
 
-	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount, g_VSBasicShader, sizeof(g_VSBasicShader), m_SimpleVertexLayout.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount, g_VSBasicShader, sizeof(g_VSBasicShader), m_VertexLayout.ReleaseAndGetAddressOf()))
 		return false;
 
-	if FAILED(m_Device->CreateVertexShader(g_VSBasicShader, sizeof(g_VSBasicShader), nullptr, m_SimpleVertexShader.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreateVertexShader(g_VSBasicShader, sizeof(g_VSBasicShader), nullptr, m_VertexShader.ReleaseAndGetAddressOf()))
 		return false;
 
-	if FAILED(m_Device->CreatePixelShader(g_PSBasicShader, sizeof(g_PSBasicShader), nullptr, m_SimplePixelShader.ReleaseAndGetAddressOf()))
+	if FAILED(m_Device->CreatePixelShader(g_PSBasicShader, sizeof(g_PSBasicShader), nullptr, m_PixelShader.ReleaseAndGetAddressOf()))
 		return false;
 
 #pragma region Load Textures
@@ -105,6 +105,12 @@ bool DemoScene::CreateDeviceDependentResources()
 
 		if FAILED(m_Device->CreateBlendState(&desc, m_BSTransparent.ReleaseAndGetAddressOf()))
 			return false;
+
+		desc = CD3D11_BLEND_DESC(d3dDefault);
+		desc.RenderTarget[0].RenderTargetWriteMask = NULL;
+
+		if FAILED(m_Device->CreateBlendState(&desc, m_BSNoColorWrite.ReleaseAndGetAddressOf()))
+			return false;
 	}
 	{
 		CD3D11_RASTERIZER_DESC desc(d3dDefault);
@@ -129,7 +135,25 @@ bool DemoScene::CreateDeviceDependentResources()
 		CD3D11_DEPTH_STENCIL_DESC desc(d3dDefault);
 		desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 
-		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSSDisableWrite.ReleaseAndGetAddressOf()))
+		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSSNoDepthWrite.ReleaseAndGetAddressOf()))
+			return false;
+
+		desc = CD3D11_DEPTH_STENCIL_DESC(d3dDefault);
+		desc.StencilEnable = TRUE;
+		desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+		desc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_REPLACE;
+		desc.BackFace = desc.FrontFace;
+
+		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSSMarkPixels.ReleaseAndGetAddressOf()))
+			return false;
+
+		desc = CD3D11_DEPTH_STENCIL_DESC(d3dDefault);
+		desc.StencilEnable = TRUE;
+		desc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+		desc.BackFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+
+		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSSDrawMarkedOnly.ReleaseAndGetAddressOf()))
 			return false;
 	}
 
@@ -190,6 +214,7 @@ void DemoScene::UpdateScene(float dt)
 	//build projection matrix
 	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 1.0f, 100.0f);
 	XMStoreFloat4x4(&m_CameraProjection, proj);
+
 	//build view matrix
 	static XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 	XMMATRIX view = XMMatrixLookAtLH(XMVector3Transform(eyePos, XMMatrixRotationY(XMConvertToRadians(cameraAngle))), focus, up);
@@ -203,24 +228,14 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX rotateX = XMMatrixRotationX(XMConvertToRadians(angle));
 	XMMATRIX rotateZ = XMMatrixRotationZ(XMConvertToRadians(angle));
 
-	XMMATRIX worldBox = rotateY * XMMatrixTranslation(-2, 2, 0);
-	XMMATRIX worldTeapot = rotateY * XMMatrixTranslation(4, 2, 10);
-	XMMATRIX worldSphere = rotateY * XMMatrixTranslation(3.5f, 2, 0);
-	XMMATRIX worldTorus = rotateY * XMMatrixTranslation(-2, 1, 10);
-	XMMATRIX worldMirror = XMMatrixTranslation(6.0f, 2.5f, 5.0f);
+	m_DrawableBox->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(-2, 2, 0));
+	m_DrawableTeapot->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(4, 2, 10));
+	m_DrawableSphere->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(3.5f, 2, 0));
+	m_DrawableTorus->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(-2, 1, 10));
+	m_DrawableMirror->WorldTransform = Helpers::XMMatrixToStorage(XMMatrixTranslation(6.0f, 2.5f, 5.0f));
 
-	XMStoreFloat4x4(&m_DrawableBox->WorldTransform, worldBox);
-	
-	XMStoreFloat4x4(&m_DrawableSphere->WorldTransform, worldSphere);
 	XMStoreFloat4x4(&m_DrawableSphere->TextureTransform, XMMatrixScaling(2.0f, 2.0f, 0.0f));
-	
-	XMStoreFloat4x4(&m_DrawableTorus->WorldTransform, worldTorus);
-	
-	XMStoreFloat4x4(&m_DrawableTeapot->WorldTransform, worldTeapot);
-	
 	XMStoreFloat4x4(&m_DrawableGrid->TextureTransform, XMMatrixScaling(10.0f, 10.0f, 0.0f));
-
-	XMStoreFloat4x4(&m_DrawableMirror->WorldTransform, worldMirror);
 	XMStoreFloat4x4(&m_DrawableMirror->TextureTransform, XMMatrixScaling(2.0f, 1.0f, 0.0f));
 
 	//DirLightVector is updated by ImGui widget
@@ -471,24 +486,21 @@ void DemoScene::DrawScene()
 {
 	Clear();
 
-	XMFLOAT3 lightPositions[] = { m_CbPerFrameData.PointLight.Position, m_CbPerFrameData.SpotLight.Position };
 	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
 
+	XMFLOAT3 lightPositions[] = { m_CbPerFrameData.PointLight.Position, m_CbPerFrameData.SpotLight.Position };
 	for (auto const& pos : lightPositions)
 	{
-		XMMATRIX WVP = XMMatrixTranslation(pos.x, pos.y, pos.z) * viewProj;
-		m_LightSphere->Draw(m_ImmediateContext.Get(), WVP);
+		XMMATRIX worldViewProj = XMMatrixTranslation(pos.x, pos.y, pos.z) * viewProj;
+		m_LightSphere->Draw(m_ImmediateContext.Get(), worldViewProj);
 	}
 
-	m_ImmediateContext->IASetInputLayout(m_SimpleVertexLayout.Get());
-	m_ImmediateContext->VSSetShader(m_SimpleVertexShader.Get(), nullptr, 0);
-	m_ImmediateContext->PSSetShader(m_SimplePixelShader.Get(), nullptr, 0);
+	m_ImmediateContext->IASetInputLayout(m_VertexLayout.Get());
+	m_ImmediateContext->VSSetShader(m_VertexShader.Get(), nullptr, 0);
+	m_ImmediateContext->PSSetShader(m_PixelShader.Get(), nullptr, 0);
 	m_ImmediateContext->PSSetSamplers(0, 1, m_SamplerAnisotropic.GetAddressOf());
-
-	//Bind CbPerObject (slot: 0) to VS & PS
 	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
 	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
-	//Bind CbPerFrame (slot: 1) to PS
 	m_ImmediateContext->PSSetConstantBuffers(1, 1, m_CbPerFrame.GetAddressOf());
 
 	UINT stride = sizeof(GeometricPrimitive::VertexType);
@@ -512,7 +524,31 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
 
-	//======= reflect some objects across the plane ================================================================//
+	//================================== mark mirror pixels in stencil buffer =========================================//
+
+	float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	//don't write to backbuffer while marking mirror pixels in stencilbuffer 
+	m_ImmediateContext->OMSetBlendState(m_BSNoColorWrite.Get(), blendFactor, 0xffffffff);
+	//disables depth write as well
+	m_ImmediateContext->OMSetDepthStencilState(m_DSSMarkPixels.Get(), 1);
+
+	m_CbPerObjectData.WorldViewProj = Helpers::XMMatrixToStorage(m_DrawableMirror->GetWorld() * viewProj);
+	m_CbPerObjectData.World = m_DrawableMirror->WorldTransform;
+	m_CbPerObjectData.TextureTransform = m_DrawableMirror->TextureTransform;
+	m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(m_DrawableMirror->WorldTransform);
+	m_CbPerObjectData.Material = m_DrawableMirror->Material;
+
+	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerObject.Get(), &m_CbPerObjectData);
+
+	m_ImmediateContext->PSSetShaderResources(0, 1, m_DrawableMirror->TextureSRV.GetAddressOf());
+	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableMirror->VertexBuffer.GetAddressOf(), &stride, &offset);
+	m_ImmediateContext->IASetIndexBuffer(m_DrawableMirror->IndexBuffer.Get(), m_DrawableMirror->IndexBufferFormat, 0);
+	m_ImmediateContext->DrawIndexed(m_DrawableMirror->IndexCount, 0, 0);
+
+	//reset blend state so color write gets enabled again
+	m_ImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffff);
+
+	//=============================reflect some objects across the mirror plane =======================================//
 
 	static Drawable* reflectedDrawables[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
 
@@ -526,17 +562,20 @@ void DemoScene::DrawScene()
 	reflectedCbPerFrameData.SpotLight = Helpers::GetReflectedLight(m_CbPerFrameData.SpotLight, reflectionMatrix);
 	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &reflectedCbPerFrameData);
 	
+	//Draw reflection only through the mirror
+	m_ImmediateContext->OMSetDepthStencilState(m_DSSDrawMarkedOnly.Get(), 1);
+
 	//reflected triangles' winding order gets reversed, so setting counter clock wise as front facing
 	m_ImmediateContext->RSSetState(m_RSFrontCounterCW.Get());
+
 	//Now draw reflected objects
 	for (auto const& it : reflectedDrawables)
 	{
-		XMMATRIX reflectedWorld = XMLoadFloat4x4(&it->WorldTransform) * reflectionMatrix;
-		XMMATRIX reflectedWVP = reflectedWorld * viewProj;
-
-		XMStoreFloat4x4(&m_CbPerObjectData.World, reflectedWorld);
-		XMStoreFloat4x4(&m_CbPerObjectData.WorldViewProj, reflectedWVP);
-		XMStoreFloat4x4(&m_CbPerObjectData.WorldInvTranspose, Helpers::ComputeInverseTranspose(reflectedWorld));
+		XMMATRIX reflectedWorld = it->GetWorld() * reflectionMatrix;
+	
+		m_CbPerObjectData.World = Helpers::XMMatrixToStorage(reflectedWorld);
+		m_CbPerObjectData.WorldViewProj = Helpers::XMMatrixToStorage(reflectedWorld * viewProj);
+		m_CbPerObjectData.WorldInvTranspose = Helpers::XMMatrixToStorage(Helpers::ComputeInverseTranspose(reflectedWorld));
 		m_CbPerObjectData.TextureTransform = it->TextureTransform;
 		m_CbPerObjectData.Material = it->Material;
 
@@ -547,9 +586,7 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
-	//reset back to clock wise as front facing
-	m_ImmediateContext->RSSetState(nullptr);
-	
+
 	//Restore lights to their old positions/directions
 	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &m_CbPerFrameData);
 
@@ -557,10 +594,9 @@ void DemoScene::DrawScene()
 
 	static Drawable* transparentDrawables[] = {   m_DrawableMirror.get(), m_DrawableBox.get() };
 	
-	float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), blendFactor, 0xffffffff);
 	m_ImmediateContext->RSSetState(m_RSCullNone.Get());
-	m_ImmediateContext->OMSetDepthStencilState(m_DSSDisableWrite.Get(), 0);
+	m_ImmediateContext->OMSetDepthStencilState(m_DSSNoDepthWrite.Get(), 0);
 
 	for (auto const& it : transparentDrawables)
 	{

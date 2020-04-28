@@ -133,7 +133,7 @@ struct FogProperties
 	FogProperties() :
 		FogStart(20.0f),
 		FogRange(100.0f),
-		FogEnabled(1.0f)
+		FogEnabled(0.0f)
 	{
 		DirectX::XMStoreFloat4(&FogColor, DirectX::Colors::Silver);
 	}

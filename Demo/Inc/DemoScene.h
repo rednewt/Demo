@@ -31,9 +31,9 @@ private:
 	static_assert(sizeof(PS_ConstantBufferPerFrame) % 16 == 0, "PS_ConstantBufferPerFrame struct not 16-byte aligned");
 	static_assert(sizeof(VS_PS_ConstantBufferPerObject) % 16 == 0, "VS_PS_ConstantBufferPerObject struct not 16-byte aligned");
 
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> m_SimpleVertexShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_SimplePixelShader;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_SimpleVertexLayout;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> m_VertexShader;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_PixelShader;
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_VertexLayout;
 
 	std::unique_ptr<DebugDrawable> m_LightSphere;
 
@@ -51,10 +51,14 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSTransparent;
+	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSNoColorWrite;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSCullNone;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSWireframe;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSFrontCounterCW;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSDisableWrite;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSNoDepthWrite;
+
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSMarkPixels;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSDrawMarkedOnly;
 
 	DirectX::XMFLOAT4X4 m_CameraView;
 	DirectX::XMFLOAT4X4 m_CameraProjection;

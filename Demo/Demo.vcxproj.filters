@@ -123,10 +123,10 @@
     <ClCompile Include="Src\imgui_widgets.cpp">
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="Inc\Helpers.cpp">
+    <ClCompile Include="Src\Drawable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Drawable.cpp">
+    <ClCompile Include="Src\Helpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
