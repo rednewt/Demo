@@ -58,6 +58,7 @@ public:
 
 	static std::unique_ptr<DebugDrawable> Create(ID3D11Device* device, Shape shape);
 
+	void PrepareForRendering(ID3D11DeviceContext* context);
 	void Draw(ID3D11DeviceContext* context, DirectX::FXMMATRIX worldViewProj, DirectX::FXMVECTOR objectColor = DirectX::Colors::White.v);
 private:
 	DebugDrawable();
@@ -72,7 +73,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_VertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_IndexBuffer;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbConstants;
+	static Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbConstants;
 
 	static Microsoft::WRL::ComPtr<ID3D11VertexShader> m_VertexShader;
 	static Microsoft::WRL::ComPtr<ID3D11PixelShader> m_PixelShader;

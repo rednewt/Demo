@@ -1,3 +1,5 @@
+//bare minimum shader for drawing debug objects, such as light location
+
 cbuffer cbConstants : register(b0)
 {
     row_major float4x4 gWorldViewProj;

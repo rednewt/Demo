@@ -42,7 +42,7 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_CbPerFrameData.SpotLight.Direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
 	m_CbPerFrameData.SpotLight.SpotPower = 2.0f;
 
-	//Setup some Materials
+	//Setup some material properties other than default
 	m_DrawableBox->Material.Ambient = XMFLOAT4(0.35f, 0.35f, 0.35f, 1.0f);
 	m_DrawableSphere->Material.Ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
@@ -197,7 +197,7 @@ bool DemoScene::Initialize()
 
 	Super::ImGui_Init();
 
-	m_LightSphere = DebugDrawable::Create(m_Device.Get(), DebugDrawable::Shape::Sphere);
+	m_LightPos = DebugDrawable::Create(m_Device.Get(), DebugDrawable::Shape::Sphere);
 
 	return true;
 }
@@ -208,7 +208,7 @@ void DemoScene::UpdateScene(float dt)
 
 	//values updated by ImGui widgets
 	static float cameraAngle = 0.0f;
-	static XMVECTOR eyePos = XMVectorSet(0.0f, 7.0f, -10.0f, 1.0f);
+	static XMVECTOR initEyePos = XMVectorSet(0.0f, 7.0f, -10.0f, 1.0f);
 	static XMVECTOR focus = XMVectorSet(0, 0, 0, 1);
 
 	//build projection matrix
@@ -216,8 +216,9 @@ void DemoScene::UpdateScene(float dt)
 	XMStoreFloat4x4(&m_CameraProjection, proj);
 
 	//build view matrix
-	static XMVECTOR up = XMVectorSet(0, 1, 0, 0);
-	XMMATRIX view = XMMatrixLookAtLH(XMVector3Transform(eyePos, XMMatrixRotationY(XMConvertToRadians(cameraAngle))), focus, up);
+	XMVECTOR up = XMVectorSet(0, 1, 0, 0);
+	XMVECTOR eyePosition = XMVector3Transform(initEyePos, XMMatrixRotationY(XMConvertToRadians(cameraAngle)));
+	XMMATRIX view = XMMatrixLookAtLH(eyePosition, focus, up);
 	XMStoreFloat4x4(&m_CameraView, view);
 
 	static float angle = 0.0f;
@@ -243,7 +244,7 @@ void DemoScene::UpdateScene(float dt)
 	//SetDirection method will normalize the vector before setting it
 	m_CbPerFrameData.DirLight.SetDirection(dirLightVector);
 
-	XMStoreFloat3(&m_CbPerFrameData.EyePos, eyePos);
+	XMStoreFloat3(&m_CbPerFrameData.EyePos, eyePosition);
 
 	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &m_CbPerFrameData);
 
@@ -295,11 +296,11 @@ void DemoScene::UpdateScene(float dt)
 
 	if (ImGui::CollapsingHeader("Camera"))
 	{
-		ImGui::DragFloat3("EyePos", reinterpret_cast<float*>(&eyePos), 1.0f, -100.0f, 100.0f, "%.2f");
+		ImGui::DragFloat3("EyePos", reinterpret_cast<float*>(&initEyePos), 1.0f, -100.0f, 100.0f, "%.2f");
 		ImGui::DragFloat3("Focus", reinterpret_cast<float*>(&focus), 1.0f, -100.0f, 100.0f), "%.2f";
 		
-		if (XMVector3Equal(eyePos, XMVectorZero()))
-			eyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+		if (XMVector3Equal(initEyePos, XMVectorZero()))
+			initEyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
 
 		ImGui::SliderFloat("Rotate-Y", &cameraAngle, 0.0f, 360.0f);
 	}
@@ -482,19 +483,8 @@ void DemoScene::Clear()
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
 
-void DemoScene::DrawScene()
+void DemoScene::PrepareForRendering()
 {
-	Clear();
-
-	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
-
-	XMFLOAT3 lightPositions[] = { m_CbPerFrameData.PointLight.Position, m_CbPerFrameData.SpotLight.Position };
-	for (auto const& pos : lightPositions)
-	{
-		XMMATRIX worldViewProj = XMMatrixTranslation(pos.x, pos.y, pos.z) * viewProj;
-		m_LightSphere->Draw(m_ImmediateContext.Get(), worldViewProj);
-	}
-
 	m_ImmediateContext->IASetInputLayout(m_VertexLayout.Get());
 	m_ImmediateContext->VSSetShader(m_VertexShader.Get(), nullptr, 0);
 	m_ImmediateContext->PSSetShader(m_PixelShader.Get(), nullptr, 0);
@@ -502,6 +492,23 @@ void DemoScene::DrawScene()
 	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
 	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
 	m_ImmediateContext->PSSetConstantBuffers(1, 1, m_CbPerFrame.GetAddressOf());
+}
+void DemoScene::DrawScene()
+{
+	Clear();
+
+	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
+	XMFLOAT3 lightPositions[] = { m_CbPerFrameData.PointLight.Position, m_CbPerFrameData.SpotLight.Position };
+
+	m_LightPos->PrepareForRendering(m_ImmediateContext.Get());
+
+	for (auto const& pos : lightPositions)
+	{
+		XMMATRIX worldViewProj = XMMatrixTranslation(pos.x, pos.y, pos.z) * viewProj;
+		m_LightPos->Draw(m_ImmediateContext.Get(), worldViewProj);
+	}
+
+	PrepareForRendering();
 
 	UINT stride = sizeof(GeometricPrimitive::VertexType);
 	UINT offset = 0;
@@ -526,9 +533,8 @@ void DemoScene::DrawScene()
 
 	//================================== mark mirror pixels in stencil buffer =========================================//
 
-	float blendFactor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	//don't write to backbuffer while marking mirror pixels in stencilbuffer 
-	m_ImmediateContext->OMSetBlendState(m_BSNoColorWrite.Get(), blendFactor, 0xffffffff);
+	m_ImmediateContext->OMSetBlendState(m_BSNoColorWrite.Get(), NULL, 0xffffffff);
 	//disables depth write as well
 	m_ImmediateContext->OMSetDepthStencilState(m_DSSMarkPixels.Get(), 1);
 
@@ -546,7 +552,7 @@ void DemoScene::DrawScene()
 	m_ImmediateContext->DrawIndexed(m_DrawableMirror->IndexCount, 0, 0);
 
 	//reset blend state so color write gets enabled again
-	m_ImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffff);
+	m_ImmediateContext->OMSetBlendState(nullptr, NULL, 0xffffffff);
 
 	//=============================reflect some objects across the mirror plane =======================================//
 
@@ -562,7 +568,7 @@ void DemoScene::DrawScene()
 	reflectedCbPerFrameData.SpotLight = Helpers::GetReflectedLight(m_CbPerFrameData.SpotLight, reflectionMatrix);
 	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &reflectedCbPerFrameData);
 	
-	//Draw reflection only through the mirror
+	//Draw reflection only through the mirror i.e where stencil value = 1
 	m_ImmediateContext->OMSetDepthStencilState(m_DSSDrawMarkedOnly.Get(), 1);
 
 	//reflected triangles' winding order gets reversed, so setting counter clock wise as front facing
@@ -594,7 +600,7 @@ void DemoScene::DrawScene()
 
 	static Drawable* transparentDrawables[] = {   m_DrawableMirror.get(), m_DrawableBox.get() };
 	
-	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), blendFactor, 0xffffffff);
+	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), NULL, 0xffffffff);
 	m_ImmediateContext->RSSetState(m_RSCullNone.Get());
 	m_ImmediateContext->OMSetDepthStencilState(m_DSSNoDepthWrite.Get(), 0);
 
@@ -615,7 +621,7 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
 
-	m_ImmediateContext->OMSetBlendState(nullptr, blendFactor, 0xffffffff);
+	m_ImmediateContext->OMSetBlendState(nullptr, NULL, 0xffffffff);
 	m_ImmediateContext->RSSetState(nullptr);
 	m_ImmediateContext->OMSetDepthStencilState(nullptr, 0);
 
