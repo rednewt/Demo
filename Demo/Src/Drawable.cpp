@@ -51,10 +51,10 @@ std::unique_ptr<DebugDrawable> DebugDrawable::Create(ID3D11Device* device, Shape
 	switch (shape)
 	{
 	case Shape::Cube:	
-		GeometricPrimitive::CreateCube(tempVertices, indices, 0.5f, false);
+		GeometricPrimitive::CreateCube(tempVertices, indices, 0.2f, false);
 		break;
 	case Shape::Sphere:
-		GeometricPrimitive::CreateSphere(tempVertices, indices, 0.5f, 16, false);
+		GeometricPrimitive::CreateSphere(tempVertices, indices, 0.3f, 16, false);
 		break;
 	default:
 		return nullptr;

@@ -35,7 +35,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_PixelShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_VertexLayout;
 
-	std::unique_ptr<DebugDrawable> m_LightPos;
+	std::unique_ptr<DebugDrawable> m_PointSphere;
 
 	std::unique_ptr<Drawable> m_DrawableBox;
 	std::unique_ptr<Drawable> m_DrawableSphere;
@@ -76,4 +76,8 @@ private:
 	bool CreateDeviceDependentResources();
 	void CreateBuffers();
 	void PrepareForRendering();
+	void RenderToStencil();
+	void RenderReflections();
+	void ResetStates();
+	void FillPerObjectConstantBuffer(Drawable* const drawable);
 };
