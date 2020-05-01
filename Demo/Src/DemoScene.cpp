@@ -34,7 +34,7 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableMirror = std::make_unique<Drawable>();
 
 	//Setup DirectionalLight
-	m_CbPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	m_CbPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	//Setup Pointlight
 	m_CbPerFrameData.PointLight.Position = XMFLOAT3(0.0f, 2.0f, -2.0f);
 	//Setup Spotlight
@@ -48,6 +48,8 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	m_DrawableTorus->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
 	m_DrawableMirror->Material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
+	m_DrawableGrid->Material.Diffuse = XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f);
+	m_DrawableGrid->Material.Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 bool DemoScene::CreateDeviceDependentResources()
@@ -151,9 +153,18 @@ bool DemoScene::CreateDeviceDependentResources()
 		desc = CD3D11_DEPTH_STENCIL_DESC(d3dDefault);
 		desc.StencilEnable = TRUE;
 		desc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
-		desc.BackFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+		desc.BackFace = desc.FrontFace;
 
 		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSSDrawMarkedOnly.ReleaseAndGetAddressOf()))
+			return false;
+
+		desc = CD3D11_DEPTH_STENCIL_DESC(d3dDefault);
+		desc.StencilEnable = TRUE;
+		desc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_INCR_SAT;
+		desc.FrontFace.StencilFunc = D3D11_COMPARISON_EQUAL;
+		desc.BackFace = desc.FrontFace;
+
+		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSSNoDoubleBlend.ReleaseAndGetAddressOf()))
 			return false;
 	}
 
@@ -197,7 +208,8 @@ bool DemoScene::Initialize()
 
 	Super::ImGui_Init();
 
-	m_PointSphere = DebugDrawable::Create(m_Device.Get(), DebugDrawable::Shape::Cube);
+	m_PointSphere = SimpleDrawable::Create(m_Device.Get(), SimpleDrawable::Shape::Sphere);
+	m_ShadowMatShader = SimpleDrawable::Create(m_Device.Get());
 
 	return true;
 }
@@ -230,17 +242,17 @@ void DemoScene::UpdateScene(float dt)
 	XMMATRIX rotateZ = XMMatrixRotationZ(XMConvertToRadians(angle));
 
 	m_DrawableBox->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(-2, 2, 0));
-	m_DrawableTeapot->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(4, 2, 10));
-	m_DrawableSphere->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(3.5f, 2, 0));
-	m_DrawableTorus->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(-2, 1, 10));
+	m_DrawableTeapot->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(2, 2, 10));
+	m_DrawableSphere->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(3, 2, 0));
+	m_DrawableTorus->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(-4, 2, 6));
 	m_DrawableMirror->WorldTransform = Helpers::XMMatrixToStorage(XMMatrixTranslation(6.0f, 2.5f, 5.0f));
 
 	XMStoreFloat4x4(&m_DrawableSphere->TextureTransform, XMMatrixScaling(2.0f, 2.0f, 0.0f));
-	XMStoreFloat4x4(&m_DrawableGrid->TextureTransform, XMMatrixScaling(10.0f, 10.0f, 0.0f));
+	XMStoreFloat4x4(&m_DrawableGrid->TextureTransform, XMMatrixScaling(20.0f, 20.0f, 0.0f));
 	XMStoreFloat4x4(&m_DrawableMirror->TextureTransform, XMMatrixScaling(2.0f, 1.0f, 0.0f));
 
 	//DirLightVector is updated by ImGui widget
-	static XMFLOAT3 dirLightVector = XMFLOAT3(1.0f, 0.0f, 0.0f);
+	static XMFLOAT3 dirLightVector = XMFLOAT3(-1.0f, -1.0f, 0.0f);
 	//SetDirection method will normalize the vector before setting it
 	m_CbPerFrameData.DirLight.SetDirection(dirLightVector);
 	XMStoreFloat3(&m_CbPerFrameData.EyePos, eyePosition);
@@ -308,7 +320,7 @@ void DemoScene::UpdateScene(float dt)
 	{
 		if (ImGui::TreeNode("Fog"))
 		{
-			static bool isActive = true;
+			static bool isActive = false;
 			if (ImGui::Checkbox("Enabled", &isActive))
 			{
 				if (isActive)
@@ -452,18 +464,15 @@ void DemoScene::UpdateScene(float dt)
 
 			ImGui::TreePop();
 		}
-	}
-	{
-		static bool bWireframe = false;
-		if (ImGui::CollapsingHeader("Render States"))
-		{
-			ImGui::Checkbox("Wireframe", &bWireframe);
-		}
 
-		if (bWireframe)
-			m_ImmediateContext->RSSetState(m_RSWireframe.Get());
-		else
-			m_ImmediateContext->RSSetState(nullptr);
+		if (ImGui::TreeNode("Grid"))
+		{
+			ImGui::InputFloat4("Ambient##6", reinterpret_cast<float*>(&m_DrawableGrid->Material.Ambient), 2);
+			ImGui::InputFloat4("Diffuse##6", reinterpret_cast<float*>(&m_DrawableGrid->Material.Diffuse), 2);
+			ImGui::InputFloat4("Specular##6", reinterpret_cast<float*>(&m_DrawableGrid->Material.Specular), 2);
+
+			ImGui::TreePop();
+		}
 	}
 	ImGui::End();
 
@@ -476,11 +485,14 @@ void DemoScene::DrawScene()
 
 	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
 	XMFLOAT3 lightPositions[] = { m_CbPerFrameData.PointLight.Position, m_CbPerFrameData.SpotLight.Position };
-	m_PointSphere->PrepareForRendering(m_ImmediateContext.Get());
+
+	m_PointSphere->BindShader(m_ImmediateContext.Get(), m_VertexLayout.Get());
 	for (auto const& pos : lightPositions)
 	{
 		XMMATRIX worldViewProj = XMMatrixTranslation(pos.x, pos.y, pos.z) * viewProj;
-		m_PointSphere->Draw(m_ImmediateContext.Get(), worldViewProj);
+
+		m_PointSphere->UpdateConstantBuffer(m_ImmediateContext.Get(), worldViewProj);
+		m_PointSphere->Draw(m_ImmediateContext.Get());
 	}
 
 	PrepareForRendering();
@@ -500,12 +512,36 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
 
+	//======================================== planar shadows ==============================================================//
+	static Drawable* drawablesShadow[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
+
+	m_ShadowMatShader->BindShader(m_ImmediateContext.Get(), m_VertexLayout.Get());
+	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), NULL, 0xffffffff);
+	m_ImmediateContext->OMSetDepthStencilState(m_DSSNoDoubleBlend.Get(), 0);
+
+	XMVECTOR shadowPlane = XMPlaneFromPointNormal(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+	XMMATRIX shadowMatrix = XMMatrixShadow(shadowPlane, -XMLoadFloat3(&m_CbPerFrameData.DirLight.Direction));
+
+	for (auto const& it : drawablesShadow)
+	{
+		XMMATRIX world = it->GetWorld() * shadowMatrix * XMMatrixTranslation(0.0f, 0.0001f, 0.0f);
+		m_ShadowMatShader->UpdateConstantBuffer(m_ImmediateContext.Get(), world * viewProj, XMVectorSet(0.0f, 0.0f, 0.0f, 0.4f));
+		
+		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
+		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
+		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
+	}
+	//restore relevant shaders and input layout
+	PrepareForRendering();
+
+	//==================================================================================================================//
+	
 	//Mark mirror pixels in stencil buffer to 1
 	RenderToStencil();
 	//Draw reflections only where stencil buffer value is 1
 	RenderReflections();
 	
-	static Drawable* transparentDrawables[] = {   m_DrawableMirror.get(), m_DrawableBox.get() };
+	static Drawable* transparentDrawables[] = {   m_DrawableMirror.get() /*, m_DrawableBox.get()*/ };
 	
 	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), NULL, 0xffffffff);
 	m_ImmediateContext->RSSetState(m_RSCullNone.Get());
@@ -520,6 +556,7 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
+	
 
 	ResetStates();
 	Present();
@@ -528,7 +565,7 @@ void DemoScene::DrawScene()
 
 void DemoScene::Clear()
 {
-	static XMVECTOR backBufferColor = DirectX::Colors::Silver;
+	static XMVECTOR backBufferColor = DirectX::Colors::Black;
 	ImGui::PushItemWidth(ImGui::GetColumnWidth() * 0.5f);
 	ImGui::ColorEdit4("clear color", reinterpret_cast<float*>(&backBufferColor));
 	ImGui::PopItemWidth();
@@ -635,8 +672,15 @@ void DemoScene::RenderReflections()
 
 void DemoScene::ResetStates()
 {
+	static bool bWireframe = false;
+	ImGui::Checkbox("Wireframe", &bWireframe);
+	
+	if (bWireframe)
+		m_ImmediateContext->RSSetState(m_RSWireframe.Get());
+	else
+		m_ImmediateContext->RSSetState(nullptr);
+
 	m_ImmediateContext->OMSetBlendState(nullptr, NULL, 0xffffffff);
-	m_ImmediateContext->RSSetState(nullptr);
 	m_ImmediateContext->OMSetDepthStencilState(nullptr, 0);
 }
 

@@ -43,7 +43,7 @@ struct Drawable
 	Material Material;
 };
 
-class DebugDrawable
+class SimpleDrawable
 {
 public:
 	enum class Shape
@@ -52,16 +52,19 @@ public:
 		Sphere
 	};
 
-	~DebugDrawable() = default;
-	DebugDrawable(const DebugDrawable&) = delete;
-	DebugDrawable& operator=(const DebugDrawable&) = delete;
+	~SimpleDrawable() = default;
+	SimpleDrawable(const SimpleDrawable&) = delete;
+	SimpleDrawable& operator=(const SimpleDrawable&) = delete;
 
-	static std::unique_ptr<DebugDrawable> Create(ID3D11Device* device, Shape shape);
+	static std::unique_ptr<SimpleDrawable> Create(ID3D11Device* device, Shape shape);
+	static std::unique_ptr<SimpleDrawable> Create(ID3D11Device* device);
 
-	void PrepareForRendering(ID3D11DeviceContext* context);
-	void Draw(ID3D11DeviceContext* context, DirectX::FXMMATRIX worldViewProj, DirectX::FXMVECTOR objectColor = DirectX::Colors::White.v);
+	void BindShader(ID3D11DeviceContext* context, ID3D11InputLayout* posNormalTexture);
+	void UpdateConstantBuffer(ID3D11DeviceContext* context, DirectX::FXMMATRIX worldViewProj, DirectX::FXMVECTOR objectColor = DirectX::Colors::White.v);
+	void Draw(ID3D11DeviceContext* context);
 private:
-	DebugDrawable();
+	SimpleDrawable();
+	void CreateDeviceDependentResources(ID3D11Device* const device);
 
 	struct VS_PS_CbConstants
 	{

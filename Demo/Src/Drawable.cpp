@@ -6,10 +6,10 @@
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
-ComPtr<ID3D11VertexShader> DebugDrawable::m_VertexShader = nullptr;
-ComPtr<ID3D11PixelShader> DebugDrawable::m_PixelShader = nullptr;
-ComPtr<ID3D11InputLayout> DebugDrawable::m_InputLayout = nullptr;
-ComPtr<ID3D11Buffer> DebugDrawable::m_CbConstants = nullptr;
+ComPtr<ID3D11VertexShader> SimpleDrawable::m_VertexShader = nullptr;
+ComPtr<ID3D11PixelShader> SimpleDrawable::m_PixelShader = nullptr;
+ComPtr<ID3D11InputLayout> SimpleDrawable::m_InputLayout = nullptr;
+ComPtr<ID3D11Buffer> SimpleDrawable::m_CbConstants = nullptr;
 
 namespace
 {
@@ -17,7 +17,7 @@ namespace
 	#include "Shaders\Compiled\DebugVS.h"
 }
 
-DebugDrawable::DebugDrawable() :
+SimpleDrawable::SimpleDrawable() :
 	m_IndexCount(0)
 {
 	m_CbConstantsData = {};
@@ -28,46 +28,50 @@ DebugDrawable::DebugDrawable() :
 //Since only limited number of primitives (Shapes) can be drawn, there is no point in
 //creating different vertex/index/constant buffers each time in Create()
 
-std::unique_ptr<DebugDrawable> DebugDrawable::Create(ID3D11Device* device, Shape shape)
+void SimpleDrawable::CreateDeviceDependentResources(ID3D11Device* const device)
 {
-	assert(device != nullptr);
-
-	if (!m_InputLayout.Get())
-		device->CreateInputLayout(SimpleVertex::InputElements, SimpleVertex::ElementCount, g_DebugVS, sizeof(g_DebugVS), m_InputLayout.ReleaseAndGetAddressOf());
-	
 	if (!m_VertexShader.Get())
-		device->CreateVertexShader(g_DebugVS, sizeof(g_DebugVS), nullptr, m_VertexShader.ReleaseAndGetAddressOf());
-	
+		device->CreateVertexShader(g_SimpleVS, sizeof(g_SimpleVS), nullptr, m_VertexShader.ReleaseAndGetAddressOf());
+
 	if (!m_PixelShader.Get())
-		device->CreatePixelShader(g_DebugPS, sizeof(g_DebugPS), nullptr, m_PixelShader.ReleaseAndGetAddressOf());
+		device->CreatePixelShader(g_SimplePS, sizeof(g_SimplePS), nullptr, m_PixelShader.ReleaseAndGetAddressOf());
 
 	if (!m_CbConstants.Get())
 		Helpers::CreateConstantBuffer<VS_PS_CbConstants>(device, m_CbConstants.ReleaseAndGetAddressOf());
+}
 
-	std::vector<SimpleVertex> vertices;
+std::unique_ptr<SimpleDrawable> SimpleDrawable::Create(ID3D11Device* device)
+{
+	assert(device != nullptr);
+	std::unique_ptr<SimpleDrawable> pObj(new SimpleDrawable());
+
+	pObj->CreateDeviceDependentResources(device);
+
+	return pObj;
+}
+
+std::unique_ptr<SimpleDrawable> SimpleDrawable::Create(ID3D11Device* device, Shape shape)
+{
+	assert(device != nullptr);
+	std::unique_ptr<SimpleDrawable> pObj(new SimpleDrawable());
+
+	pObj->CreateDeviceDependentResources(device);
+
 	std::vector<uint16_t> indices;
-	std::vector<VertexPositionNormalTexture> tempVertices;
+	std::vector<VertexPositionNormalTexture> vertices;
 
 	switch (shape)
 	{
 	case Shape::Cube:	
-		GeometricPrimitive::CreateCube(tempVertices, indices, 0.2f, false);
+		GeometricPrimitive::CreateCube(vertices, indices, 0.2f, false);
 		break;
 	case Shape::Sphere:
-		GeometricPrimitive::CreateSphere(tempVertices, indices, 0.3f, 16, false);
+		GeometricPrimitive::CreateSphere(vertices, indices, 0.3f, 16, false);
 		break;
 	default:
 		return nullptr;
 	}
 
-	for (auto const& vertex : tempVertices)
-	{
-		SimpleVertex v;
-		v.Position = vertex.position;
-		vertices.push_back(v);
-	}
-
-	std::unique_ptr<DebugDrawable> pObj(new DebugDrawable());
 	pObj->m_IndexCount = static_cast<uint16_t>(indices.size());
 	Helpers::CreateBuffer(device, vertices, D3D11_BIND_VERTEX_BUFFER, pObj->m_VertexBuffer.ReleaseAndGetAddressOf());
 	Helpers::CreateBuffer(device, indices, D3D11_BIND_INDEX_BUFFER, pObj->m_IndexBuffer.ReleaseAndGetAddressOf());
@@ -75,22 +79,26 @@ std::unique_ptr<DebugDrawable> DebugDrawable::Create(ID3D11Device* device, Shape
 	return pObj;
 }
 
-void DebugDrawable::PrepareForRendering(ID3D11DeviceContext* context)
+void SimpleDrawable::BindShader(ID3D11DeviceContext* context, ID3D11InputLayout* posNormalTexture)
 {
-	context->IASetInputLayout(DebugDrawable::m_InputLayout.Get());
-	context->VSSetShader(DebugDrawable::m_VertexShader.Get(), nullptr, 0);
-	context->PSSetShader(DebugDrawable::m_PixelShader.Get(), nullptr, 0);
+	assert(context != nullptr);
 
-	context->VSSetConstantBuffers(0, 1, DebugDrawable::m_CbConstants.GetAddressOf());
-	context->PSSetConstantBuffers(0, 1, DebugDrawable::m_CbConstants.GetAddressOf());
+	context->IASetInputLayout(posNormalTexture);
+	context->VSSetShader(SimpleDrawable::m_VertexShader.Get(), nullptr, 0);
+	context->PSSetShader(SimpleDrawable::m_PixelShader.Get(), nullptr, 0);
 
-	UINT stride = sizeof(SimpleVertex);
+	context->VSSetConstantBuffers(0, 1, SimpleDrawable::m_CbConstants.GetAddressOf());
+	context->PSSetConstantBuffers(0, 1, SimpleDrawable::m_CbConstants.GetAddressOf());
+
+	if (m_VertexBuffer == nullptr || m_IndexBuffer == nullptr)
+		return;
+
+	UINT stride = sizeof(VertexPositionNormalTexture);
 	UINT offset = 0;
 	context->IASetIndexBuffer(m_IndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 	context->IASetVertexBuffers(0, 1, m_VertexBuffer.GetAddressOf(), &stride, &offset);
 }
-
-void DebugDrawable::Draw(ID3D11DeviceContext* context, FXMMATRIX worldViewProj, FXMVECTOR objectColor)
+void SimpleDrawable::UpdateConstantBuffer(ID3D11DeviceContext* context, DirectX::FXMMATRIX worldViewProj, DirectX::FXMVECTOR objectColor)
 {
 	assert(context != nullptr);
 
@@ -98,6 +106,11 @@ void DebugDrawable::Draw(ID3D11DeviceContext* context, FXMMATRIX worldViewProj, 
 	XMStoreFloat4(&m_CbConstantsData.Color, objectColor);
 
 	Helpers::UpdateConstantBuffer(context, m_CbConstants.Get(), &m_CbConstantsData);
-
+}
+void SimpleDrawable::Draw(ID3D11DeviceContext* context)
+{
+	assert(context != nullptr);
+	assert(m_IndexCount != 0);
+	
 	context->DrawIndexed(m_IndexCount, 0, 0);
 }

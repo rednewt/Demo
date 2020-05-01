@@ -3,7 +3,7 @@
 #include "DemoBase.h"
 
 struct Drawable;
-class DebugDrawable;
+class SimpleDrawable;
 
 class DemoScene : public DemoBase
 {
@@ -35,7 +35,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_PixelShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_VertexLayout;
 
-	std::unique_ptr<DebugDrawable> m_PointSphere;
+	std::unique_ptr<SimpleDrawable> m_PointSphere;
+	std::unique_ptr<SimpleDrawable> m_ShadowMatShader;
 
 	std::unique_ptr<Drawable> m_DrawableBox;
 	std::unique_ptr<Drawable> m_DrawableSphere;
@@ -50,15 +51,18 @@ private:
 	PS_ConstantBufferPerFrame m_CbPerFrameData;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
+
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSTransparent;
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSNoColorWrite;
+
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSCullNone;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSWireframe;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSFrontCounterCW;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSNoDepthWrite;
 
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSNoDepthWrite;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSMarkPixels;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSDrawMarkedOnly;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_DSSNoDoubleBlend;
 
 	DirectX::XMFLOAT4X4 m_CameraView;
 	DirectX::XMFLOAT4X4 m_CameraProjection;
