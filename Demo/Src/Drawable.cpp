@@ -3,6 +3,7 @@
 #include "Vertex.h"
 #include <GeometricPrimitive.h>
 
+/*
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
@@ -13,8 +14,8 @@ ComPtr<ID3D11Buffer> SimpleDrawable::m_CbConstants = nullptr;
 
 namespace
 {
-	#include "Shaders\Compiled\DebugPS.h"
-	#include "Shaders\Compiled\DebugVS.h"
+	#include "Shaders\Compiled\SimplePS.h"
+	#include "Shaders\Compiled\SimpleVS.h"
 }
 
 SimpleDrawable::SimpleDrawable() :
@@ -98,6 +99,7 @@ void SimpleDrawable::BindShader(ID3D11DeviceContext* context, ID3D11InputLayout*
 	context->IASetIndexBuffer(m_IndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
 	context->IASetVertexBuffers(0, 1, m_VertexBuffer.GetAddressOf(), &stride, &offset);
 }
+
 void SimpleDrawable::UpdateConstantBuffer(ID3D11DeviceContext* context, DirectX::FXMMATRIX worldViewProj, DirectX::FXMVECTOR objectColor)
 {
 	assert(context != nullptr);
@@ -107,6 +109,7 @@ void SimpleDrawable::UpdateConstantBuffer(ID3D11DeviceContext* context, DirectX:
 
 	Helpers::UpdateConstantBuffer(context, m_CbConstants.Get(), &m_CbConstantsData);
 }
+
 void SimpleDrawable::Draw(ID3D11DeviceContext* context)
 {
 	assert(context != nullptr);
@@ -114,3 +117,4 @@ void SimpleDrawable::Draw(ID3D11DeviceContext* context)
 	
 	context->DrawIndexed(m_IndexCount, 0, 0);
 }
+*/

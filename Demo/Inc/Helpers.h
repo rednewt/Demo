@@ -46,22 +46,11 @@ namespace Helpers
 	}
 
 	template<typename T>
-	inline void UpdateConstantBuffer(ID3D11DeviceContext* const context, ID3D11Buffer* const cbuffer, T* const pData)
-	{
-		assert(context != nullptr);
-
-		D3D11_MAPPED_SUBRESOURCE mappedRes;
-		DX::ThrowIfFailed(context->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes));
-		memcpy(mappedRes.pData, pData, sizeof(T));
-		context->Unmap(cbuffer, 0);
-	}
-
-	template<typename T>
-	inline void CreateBuffer(ID3D11Device* const device, std::vector<T> data, D3D11_BIND_FLAG bindFlag, ID3D11Buffer** outppBuffer)
+	inline void CreateBuffer(ID3D11Device* device, std::vector<T> data, D3D11_BIND_FLAG bindFlag, ID3D11Buffer** outppBuffer)
 	{
 		D3D11_BUFFER_DESC desc = {};
 		desc.Usage = D3D11_USAGE_IMMUTABLE;
-		desc.ByteWidth = sizeof(T) * data.size();
+		desc.ByteWidth = static_cast<UINT>(sizeof(T) * data.size());
 		desc.BindFlags = bindFlag;
 		
 		D3D11_SUBRESOURCE_DATA initData = {};
@@ -70,19 +59,6 @@ namespace Helpers
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, &initData, outppBuffer));
 	}
 
-	template<typename T>
-	inline void CreateConstantBuffer(ID3D11Device* const device, ID3D11Buffer** outppBuffer)
-	{
-		assert(device != nullptr);
-
-		D3D11_BUFFER_DESC cbDesc = {};
-		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		cbDesc.ByteWidth = sizeof(T);
-
-		DX::ThrowIfFailed(device->CreateBuffer(&cbDesc, nullptr, outppBuffer));
-	}
 
 	inline DirectionalLight GetReflectedLight(const DirectionalLight& light, DirectX::FXMMATRIX reflectionMatrix)
 	{

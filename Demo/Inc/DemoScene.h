@@ -1,6 +1,8 @@
 #pragma once
 
 #include "DemoBase.h"
+#include "ConstantBuffer.h"
+#include "Shader.h"
 
 struct Drawable;
 class SimpleDrawable;
@@ -31,12 +33,7 @@ private:
 	static_assert(sizeof(PS_ConstantBufferPerFrame) % 16 == 0, "PS_ConstantBufferPerFrame struct not 16-byte aligned");
 	static_assert(sizeof(VS_PS_ConstantBufferPerObject) % 16 == 0, "VS_PS_ConstantBufferPerObject struct not 16-byte aligned");
 
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> m_VertexShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_PixelShader;
-	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_VertexLayout;
-
-	std::unique_ptr<SimpleDrawable> m_PointSphere;
-	std::unique_ptr<SimpleDrawable> m_ShadowMatShader;
+	Shader m_BasicEffect;
 
 	std::unique_ptr<Drawable> m_DrawableBox;
 	std::unique_ptr<Drawable> m_DrawableSphere;
@@ -45,9 +42,9 @@ private:
 	std::unique_ptr<Drawable> m_DrawableGrid;
 	std::unique_ptr<Drawable> m_DrawableMirror;
 
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerObject;
+	ConstantBuffer<VS_PS_ConstantBufferPerObject> m_CbPerObject;
+	ConstantBuffer<PS_ConstantBufferPerFrame> m_CbPerFrame;
 	VS_PS_ConstantBufferPerObject m_CbPerObjectData;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbPerFrame;
 	PS_ConstantBufferPerFrame m_CbPerFrameData;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;

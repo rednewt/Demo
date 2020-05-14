@@ -43,6 +43,7 @@ struct Drawable
 	Material Material;
 };
 
+/*
 class SimpleDrawable
 {
 public:
@@ -72,7 +73,7 @@ private:
 		DirectX::XMFLOAT4 Color;
 	};
 
-	static_assert(sizeof(VS_PS_CbConstants) % 16 == 0, "VS_CvConstants not 16-byte aligned");
+	static_assert(sizeof(VS_PS_CbConstants) % 16 == 0, "VS_PS_CbConstants not 16-byte aligned");
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_VertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_IndexBuffer;
@@ -85,3 +86,5 @@ private:
 	VS_PS_CbConstants m_CbConstantsData;
 	uint16_t m_IndexCount;
 };
+
+*/

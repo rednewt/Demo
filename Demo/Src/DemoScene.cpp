@@ -14,8 +14,8 @@ extern DWORD g_WindowStyle;
 //These headers may not be present, so you may need to build the project once
 namespace
 {
-	#include "Shaders\Compiled\BasicShaderPS.h"
-	#include "Shaders\Compiled\BasicShaderVS.h"
+	#include "Shaders\Compiled\BasicPS.h"
+	#include "Shaders\Compiled\BasicVS.h"
 }
 
 using namespace DirectX;
@@ -46,7 +46,8 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableBox->Material.Ambient = XMFLOAT4(0.35f, 0.35f, 0.35f, 1.0f);
 	m_DrawableSphere->Material.Ambient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	m_DrawableSphere->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
-	m_DrawableTorus->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 64.0f);
+	m_DrawableTorus->Material.Specular = XMFLOAT4(0.0f, 0.0f, 0.0f, 64.0f);
+	m_DrawableTeapot->Material.Specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 32.0f);
 	m_DrawableMirror->Material.Diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 0.3f);
 	m_DrawableGrid->Material.Diffuse = XMFLOAT4(0.4f, 0.4f, 0.4f, 1.0f);
 	m_DrawableGrid->Material.Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -54,18 +55,12 @@ DemoScene::DemoScene(const HWND& hwnd) :
 
 bool DemoScene::CreateDeviceDependentResources()
 {
-	Helpers::CreateConstantBuffer<PS_ConstantBufferPerFrame>(m_Device.Get(), m_CbPerFrame.ReleaseAndGetAddressOf());
-	Helpers::CreateConstantBuffer<VS_PS_ConstantBufferPerObject>(m_Device.Get(), m_CbPerObject.ReleaseAndGetAddressOf());
+	m_CbPerFrame.Create(m_Device.Get());
+	m_CbPerObject.Create(m_Device.Get());
 
-	if FAILED(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount, g_VSBasicShader, sizeof(g_VSBasicShader), m_VertexLayout.ReleaseAndGetAddressOf()))
-		return false;
-
-	if FAILED(m_Device->CreateVertexShader(g_VSBasicShader, sizeof(g_VSBasicShader), nullptr, m_VertexShader.ReleaseAndGetAddressOf()))
-		return false;
-
-	if FAILED(m_Device->CreatePixelShader(g_PSBasicShader, sizeof(g_PSBasicShader), nullptr, m_PixelShader.ReleaseAndGetAddressOf()))
-		return false;
-
+	m_BasicEffect.Create(m_Device.Get(), GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount,
+		g_BasicVS, sizeof(g_BasicVS), g_BasicPS, sizeof(g_BasicPS));
+	
 #pragma region Load Textures
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\WireFence.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
@@ -120,7 +115,7 @@ bool DemoScene::CreateDeviceDependentResources()
 
 		if FAILED(m_Device->CreateRasterizerState(&desc, m_RSCullNone.ReleaseAndGetAddressOf()))
 			return false;
-
+		
 		desc = CD3D11_RASTERIZER_DESC(d3dDefault);
 		desc.FillMode = D3D11_FILL_WIREFRAME;
 
@@ -208,8 +203,6 @@ bool DemoScene::Initialize()
 
 	Super::ImGui_Init();
 
-	m_PointSphere = SimpleDrawable::Create(m_Device.Get(), SimpleDrawable::Shape::Sphere);
-	m_ShadowMatShader = SimpleDrawable::Create(m_Device.Get());
 
 	return true;
 }
@@ -257,7 +250,8 @@ void DemoScene::UpdateScene(float dt)
 	m_CbPerFrameData.DirLight.SetDirection(dirLightVector);
 	XMStoreFloat3(&m_CbPerFrameData.EyePos, eyePosition);
 
-	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &m_CbPerFrameData);
+
+	m_CbPerFrame.SetData(m_ImmediateContext.Get(), m_CbPerFrameData);
 
 #pragma region ImGui Widgets
 	if (!ImGui::Begin("Scene"))
@@ -479,21 +473,34 @@ void DemoScene::UpdateScene(float dt)
 #pragma endregion
 }
 
+
+void DemoScene::Clear()
+{
+	static XMVECTOR backBufferColor = DirectX::Colors::Black;
+	ImGui::PushItemWidth(ImGui::GetColumnWidth() * 0.5f);
+	ImGui::ColorEdit4("clear color", reinterpret_cast<float*>(&backBufferColor));
+	ImGui::PopItemWidth();
+
+	m_ImmediateContext->ClearRenderTargetView(m_RenderTargetView.Get(), reinterpret_cast<float*>(&backBufferColor));
+	m_ImmediateContext->ClearDepthStencilView(m_DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+}
+
+void DemoScene::PrepareForRendering()
+{
+	m_BasicEffect.Bind(m_ImmediateContext.Get());
+	m_ImmediateContext->PSSetSamplers(0, 1, m_SamplerAnisotropic.GetAddressOf());
+	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
+	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
+	m_ImmediateContext->PSSetConstantBuffers(1, 1, m_CbPerFrame.GetAddressOf());
+}
+
+
 void DemoScene::DrawScene()
 {
 	Clear();
 
 	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
-	XMFLOAT3 lightPositions[] = { m_CbPerFrameData.PointLight.Position, m_CbPerFrameData.SpotLight.Position };
-
-	m_PointSphere->BindShader(m_ImmediateContext.Get(), m_VertexLayout.Get());
-	for (auto const& pos : lightPositions)
-	{
-		XMMATRIX worldViewProj = XMMatrixTranslation(pos.x, pos.y, pos.z) * viewProj;
-
-		m_PointSphere->UpdateConstantBuffer(m_ImmediateContext.Get(), worldViewProj);
-		m_PointSphere->Draw(m_ImmediateContext.Get());
-	}
 
 	PrepareForRendering();
 
@@ -512,7 +519,7 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
 
-	//======================================== planar shadows ==============================================================//
+/*	//======================================== planar shadows ==============================================================//
 	static Drawable* drawablesShadow[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
 
 	m_ShadowMatShader->BindShader(m_ImmediateContext.Get(), m_VertexLayout.Get());
@@ -524,7 +531,7 @@ void DemoScene::DrawScene()
 
 	for (auto const& it : drawablesShadow)
 	{
-		XMMATRIX world = it->GetWorld() * shadowMatrix * XMMatrixTranslation(0.0f, 0.0001f, 0.0f);
+		XMMATRIX world = it->GetWorld() * shadowMatrix * XMMatrixTranslation(0.0f, 0.001f, 0.0f);
 		m_ShadowMatShader->UpdateConstantBuffer(m_ImmediateContext.Get(), world * viewProj, XMVectorSet(0.0f, 0.0f, 0.0f, 0.4f));
 		
 		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
@@ -535,7 +542,8 @@ void DemoScene::DrawScene()
 	PrepareForRendering();
 
 	//==================================================================================================================//
-	
+	*/
+
 	//Mark mirror pixels in stencil buffer to 1
 	RenderToStencil();
 	//Draw reflections only where stencil buffer value is 1
@@ -563,29 +571,6 @@ void DemoScene::DrawScene()
 }
 
 
-void DemoScene::Clear()
-{
-	static XMVECTOR backBufferColor = DirectX::Colors::Black;
-	ImGui::PushItemWidth(ImGui::GetColumnWidth() * 0.5f);
-	ImGui::ColorEdit4("clear color", reinterpret_cast<float*>(&backBufferColor));
-	ImGui::PopItemWidth();
-
-	m_ImmediateContext->ClearRenderTargetView(m_RenderTargetView.Get(), reinterpret_cast<float*>(&backBufferColor));
-	m_ImmediateContext->ClearDepthStencilView(m_DepthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-}
-
-void DemoScene::PrepareForRendering()
-{
-	m_ImmediateContext->IASetInputLayout(m_VertexLayout.Get());
-	m_ImmediateContext->VSSetShader(m_VertexShader.Get(), nullptr, 0);
-	m_ImmediateContext->PSSetShader(m_PixelShader.Get(), nullptr, 0);
-	m_ImmediateContext->PSSetSamplers(0, 1, m_SamplerAnisotropic.GetAddressOf());
-	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
-	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
-	m_ImmediateContext->PSSetConstantBuffers(1, 1, m_CbPerFrame.GetAddressOf());
-}
-
 void DemoScene::FillPerObjectConstantBuffer(Drawable* const drawable)
 {
 	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
@@ -596,7 +581,7 @@ void DemoScene::FillPerObjectConstantBuffer(Drawable* const drawable)
 	m_CbPerObjectData.WorldInvTranspose = Helpers::ComputeInverseTranspose(drawable->WorldTransform);
 	m_CbPerObjectData.Material = drawable->Material;
 
-	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerObject.Get(), &m_CbPerObjectData);
+	m_CbPerObject.SetData(m_ImmediateContext.Get(), m_CbPerObjectData);
 }
 
 void DemoScene::RenderToStencil()
@@ -636,7 +621,8 @@ void DemoScene::RenderReflections()
 	reflectedCbPerFrameData.DirLight = Helpers::GetReflectedLight(m_CbPerFrameData.DirLight, reflectionMatrix);
 	reflectedCbPerFrameData.PointLight = Helpers::GetReflectedLight(m_CbPerFrameData.PointLight, reflectionMatrix);
 	reflectedCbPerFrameData.SpotLight = Helpers::GetReflectedLight(m_CbPerFrameData.SpotLight, reflectionMatrix);
-	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &reflectedCbPerFrameData);
+	
+	m_CbPerFrame.SetData(m_ImmediateContext.Get(), reflectedCbPerFrameData);
 
 	//Draw reflection only through the mirror i.e where stencil value = 1
 	m_ImmediateContext->OMSetDepthStencilState(m_DSSDrawMarkedOnly.Get(), 1);
@@ -658,7 +644,7 @@ void DemoScene::RenderReflections()
 		m_CbPerObjectData.TextureTransform = it->TextureTransform;
 		m_CbPerObjectData.Material = it->Material;
 
-		Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerObject.Get(), &m_CbPerObjectData);
+		m_CbPerObject.SetData(m_ImmediateContext.Get(), m_CbPerObjectData);
 
 		m_ImmediateContext->PSSetShaderResources(0, 1, it->TextureSRV.GetAddressOf());
 		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
@@ -667,7 +653,7 @@ void DemoScene::RenderReflections()
 	}
 
 	//Restore lights to their old positions/directions
-	Helpers::UpdateConstantBuffer(m_ImmediateContext.Get(), m_CbPerFrame.Get(), &m_CbPerFrameData);
+	m_CbPerFrame.SetData(m_ImmediateContext.Get(), m_CbPerFrameData);
 }
 
 void DemoScene::ResetStates()
