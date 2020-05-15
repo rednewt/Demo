@@ -4,7 +4,8 @@
 struct Drawable
 {
 	~Drawable() = default;
-	Drawable(const Drawable&) = delete;
+	Drawable(Drawable const&) = delete;
+	Drawable& operator=(Drawable const&) = delete;
 
 	Drawable() :
 		IndexCount(0), VertexCount(0),
@@ -43,48 +44,3 @@ struct Drawable
 	Material Material;
 };
 
-/*
-class SimpleDrawable
-{
-public:
-	enum class Shape
-	{
-		Cube,
-		Sphere
-	};
-
-	~SimpleDrawable() = default;
-	SimpleDrawable(const SimpleDrawable&) = delete;
-	SimpleDrawable& operator=(const SimpleDrawable&) = delete;
-
-	static std::unique_ptr<SimpleDrawable> Create(ID3D11Device* device, Shape shape);
-	static std::unique_ptr<SimpleDrawable> Create(ID3D11Device* device);
-
-	void BindShader(ID3D11DeviceContext* context, ID3D11InputLayout* posNormalTexture);
-	void UpdateConstantBuffer(ID3D11DeviceContext* context, DirectX::FXMMATRIX worldViewProj, DirectX::FXMVECTOR objectColor = DirectX::Colors::White.v);
-	void Draw(ID3D11DeviceContext* context);
-private:
-	SimpleDrawable();
-	void CreateDeviceDependentResources(ID3D11Device* const device);
-
-	struct VS_PS_CbConstants
-	{
-		DirectX::XMFLOAT4X4 WorldViewProj;
-		DirectX::XMFLOAT4 Color;
-	};
-
-	static_assert(sizeof(VS_PS_CbConstants) % 16 == 0, "VS_PS_CbConstants not 16-byte aligned");
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_VertexBuffer;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_IndexBuffer;
-	static Microsoft::WRL::ComPtr<ID3D11Buffer> m_CbConstants;
-
-	static Microsoft::WRL::ComPtr<ID3D11VertexShader> m_VertexShader;
-	static Microsoft::WRL::ComPtr<ID3D11PixelShader> m_PixelShader;
-	static Microsoft::WRL::ComPtr<ID3D11InputLayout> m_InputLayout;
-
-	VS_PS_CbConstants m_CbConstantsData;
-	uint16_t m_IndexCount;
-};
-
-*/

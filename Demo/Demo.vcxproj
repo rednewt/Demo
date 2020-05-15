@@ -194,7 +194,6 @@
   <ItemGroup>
     <ClCompile Include="Src\DemoBase.cpp" />
     <ClCompile Include="Src\DemoScene.cpp" />
-    <ClCompile Include="Src\Drawable.cpp" />
     <ClCompile Include="Src\Helpers.cpp" />
     <ClCompile Include="Src\imgui.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>

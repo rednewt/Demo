@@ -14,12 +14,12 @@ public:
 	ConstantBuffer(ConstantBuffer const&) = delete;
 	ConstantBuffer& operator=(ConstantBuffer const&) = delete;
 
-	ConstantBuffer(ID3D11Device* device)
+	explicit ConstantBuffer(ID3D11Device* device)
 	{
 		Create(device);
 	}
 	
-	void Create(ID3D11Device* device)
+	void Create(ID3D11Device* device) 
 	{
 		assert(device != nullptr);
 
@@ -32,7 +32,7 @@ public:
 		DX::ThrowIfFailed(device->CreateBuffer(&cbDesc, nullptr, m_ConstantBuffer.ReleaseAndGetAddressOf()));
 	}
 
-	void SetData(ID3D11DeviceContext* context, T const& data)
+	void SetData(ID3D11DeviceContext* context, T const& data) 
 	{
 		assert(context != nullptr);
 

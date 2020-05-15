@@ -5,21 +5,23 @@
 #include "Shader.h"
 
 struct Drawable;
-class SimpleDrawable;
 
 class DemoScene : public DemoBase
 {
 private:
 	using Super = DemoBase;
-	struct VS_PS_ConstantBufferPerObject
+
+	struct VS_PS_CbPerObject_BasicShader
 	{
 		DirectX::XMFLOAT4X4 WorldViewProj;
 		DirectX::XMFLOAT4X4 World;
 		DirectX::XMFLOAT4X4 WorldInvTranspose;
 		DirectX::XMFLOAT4X4 TextureTransform;
 		Material Material;
-	};
-	struct PS_ConstantBufferPerFrame
+
+	} m_CbPerObjectData;
+
+	struct PS_CbPerFrame_BasicShader
 	{
 		DirectionalLight DirLight;
 		PointLight PointLight;
@@ -29,11 +31,20 @@ private:
 		float pad;
 
 		FogProperties Fog;
-	};
-	static_assert(sizeof(PS_ConstantBufferPerFrame) % 16 == 0, "PS_ConstantBufferPerFrame struct not 16-byte aligned");
-	static_assert(sizeof(VS_PS_ConstantBufferPerObject) % 16 == 0, "VS_PS_ConstantBufferPerObject struct not 16-byte aligned");
 
-	Shader m_BasicEffect;
+	} m_CbPerFrameData;
+
+	struct VS_PS_CbConstants_SimpleShader
+	{
+		DirectX::XMFLOAT4X4 WorldViewProj;
+		DirectX::XMFLOAT4 Color;
+
+	} m_CbConstantsData;
+
+	static_assert(sizeof(VS_PS_CbConstants_SimpleShader) % 16 == 0, "VS_PS_CbConstants not 16-byte aligned");
+	static_assert(sizeof(PS_CbPerFrame_BasicShader) % 16 == 0, "PS_ConstantBufferPerFrame struct not 16-byte aligned");
+	static_assert(sizeof(VS_PS_CbPerObject_BasicShader) % 16 == 0, "VS_PS_ConstantBufferPerObject struct not 16-byte aligned");
+
 
 	std::unique_ptr<Drawable> m_DrawableBox;
 	std::unique_ptr<Drawable> m_DrawableSphere;
@@ -42,10 +53,15 @@ private:
 	std::unique_ptr<Drawable> m_DrawableGrid;
 	std::unique_ptr<Drawable> m_DrawableMirror;
 
-	ConstantBuffer<VS_PS_ConstantBufferPerObject> m_CbPerObject;
-	ConstantBuffer<PS_ConstantBufferPerFrame> m_CbPerFrame;
-	VS_PS_ConstantBufferPerObject m_CbPerObjectData;
-	PS_ConstantBufferPerFrame m_CbPerFrameData;
+	std::shared_ptr<InputLayout> m_LayoutPosNormalTex;
+	Shader m_BasicEffect;
+	Shader m_SimpleEffect;
+
+	//basic shader constant buffers
+	ConstantBuffer<VS_PS_CbPerObject_BasicShader> m_CbPerObject;
+	ConstantBuffer<PS_CbPerFrame_BasicShader> m_CbPerFrame;
+	//simple shader constant buffers
+	ConstantBuffer<VS_PS_CbConstants_SimpleShader> m_CbConstants;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 
