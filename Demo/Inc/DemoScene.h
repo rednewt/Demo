@@ -53,7 +53,6 @@ private:
 	std::unique_ptr<Drawable> m_DrawableGrid;
 	std::unique_ptr<Drawable> m_DrawableMirror;
 
-	std::shared_ptr<InputLayout> m_LayoutPosNormalTex;
 	Shader m_BasicEffect;
 	Shader m_SimpleEffect;
 

@@ -35,8 +35,7 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableGrid = std::make_unique<Drawable>();
 	m_DrawableMirror = std::make_unique<Drawable>();
 
-	m_LayoutPosNormalTex = std::make_shared<InputLayout>();
-
+	
 	//Setup DirectionalLight
 	m_CbPerFrameData.DirLight.Direction = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	//Setup Pointlight
@@ -63,11 +62,12 @@ bool DemoScene::CreateDeviceDependentResources()
 	m_CbPerObject.Create(m_Device.Get());
 	m_CbConstants.Create(m_Device.Get());
 
-	m_LayoutPosNormalTex->Create(m_Device.Get(), GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount,
-		g_BasicVS, sizeof(g_BasicVS));
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> layoutPosNormalTex;
+	DX::ThrowIfFailed(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount,
+		g_BasicVS, sizeof(g_BasicVS), layoutPosNormalTex.ReleaseAndGetAddressOf()));
 
-	m_BasicEffect.Create(m_Device.Get(), m_LayoutPosNormalTex, g_BasicVS, sizeof(g_BasicVS), g_BasicPS, sizeof(g_BasicPS));
-	m_SimpleEffect.Create(m_Device.Get(), m_LayoutPosNormalTex, g_SimpleVS, sizeof(g_SimpleVS), g_SimplePS, sizeof(g_SimplePS));
+	m_BasicEffect.Create(m_Device.Get(), layoutPosNormalTex, g_BasicVS, sizeof(g_BasicVS), g_BasicPS, sizeof(g_BasicPS));
+	m_SimpleEffect.Create(m_Device.Get(), layoutPosNormalTex, g_SimpleVS, sizeof(g_SimpleVS), g_SimplePS, sizeof(g_SimplePS));
 
 #pragma region Load Textures
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\WireFence.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
