@@ -1,4 +1,4 @@
-#include "Common.fx"
+#include "Common.hlsli"
 
 struct VertexIn
 {
@@ -6,8 +6,6 @@ struct VertexIn
     float3 NormalL : NORMAL0;
     float2 Tex : TEXCOORD0;
 };  
-
-
 
 VertexOut main( VertexIn vin ) 
 { 

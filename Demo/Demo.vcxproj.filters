@@ -32,8 +32,14 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="cpp.hint" />
-    <None Include="Src\Shaders\Common.fx">
+    <None Include="Src\Shaders\Lighting.fx">
       <Filter>Shaders</Filter>
+    </None>
+    <None Include="Src\Shaders\Basic\Common.hlsli">
+      <Filter>Shaders\Basic</Filter>
+    </None>
+    <None Include="Src\Shaders\Simple\Common.hlsli">
+      <Filter>Shaders\Simple</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -134,16 +140,19 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Src\Shaders\PixelShader.hlsl">
+    <FxCompile Include="Src\Shaders\Basic\PixelShader.hlsl">
       <Filter>Shaders\Basic</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Shaders\VertexShader.hlsl">
+    <FxCompile Include="Src\Shaders\Basic\VertexShader.hlsl">
       <Filter>Shaders\Basic</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Shaders\SimplePS.hlsl">
+    <FxCompile Include="Src\Shaders\Simple\SimplePS.hlsl">
       <Filter>Shaders\Simple</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Shaders\SimpleVS.hlsl">
+    <FxCompile Include="Src\Shaders\Simple\SimpleVS.hlsl">
+      <Filter>Shaders\Simple</Filter>
+    </FxCompile>
+    <FxCompile Include="Src\Shaders\Simple\SimpleGS.hlsl">
       <Filter>Shaders\Simple</Filter>
     </FxCompile>
   </ItemGroup>

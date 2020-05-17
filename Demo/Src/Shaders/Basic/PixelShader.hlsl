@@ -1,4 +1,4 @@
-#include "Common.fx"
+#include "Common.hlsli"
 
 //register b0 is already used by cbPerObject from Common.fx
 

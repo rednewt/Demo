@@ -34,14 +34,14 @@ private:
 
 	} m_CbPerFrameData;
 
-	struct VS_PS_CbConstants_SimpleShader
+	struct GS_PS_CbConstants_SimpleShader
 	{
 		DirectX::XMFLOAT4X4 WorldViewProj;
 		DirectX::XMFLOAT4 Color;
 
 	} m_CbConstantsData;
 
-	static_assert(sizeof(VS_PS_CbConstants_SimpleShader) % 16 == 0, "VS_PS_CbConstants not 16-byte aligned");
+	static_assert(sizeof(GS_PS_CbConstants_SimpleShader) % 16 == 0, "VS_PS_CbConstants not 16-byte aligned");
 	static_assert(sizeof(PS_CbPerFrame_BasicShader) % 16 == 0, "PS_ConstantBufferPerFrame struct not 16-byte aligned");
 	static_assert(sizeof(VS_PS_CbPerObject_BasicShader) % 16 == 0, "VS_PS_ConstantBufferPerObject struct not 16-byte aligned");
 
@@ -53,14 +53,14 @@ private:
 	std::unique_ptr<Drawable> m_DrawableGrid;
 	std::unique_ptr<Drawable> m_DrawableMirror;
 
-	Shader m_BasicEffect;
-	Shader m_SimpleEffect;
+	Shader m_BasicShader;
+	Shader m_SimpleShader;
 
 	//basic shader constant buffers
 	ConstantBuffer<VS_PS_CbPerObject_BasicShader> m_CbPerObject;
 	ConstantBuffer<PS_CbPerFrame_BasicShader> m_CbPerFrame;
 	//simple shader constant buffers
-	ConstantBuffer<VS_PS_CbConstants_SimpleShader> m_CbConstants;
+	ConstantBuffer<GS_PS_CbConstants_SimpleShader> m_CbConstants;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 

@@ -16,8 +16,10 @@ namespace
 {
 	#include "Shaders\Compiled\BasicPS.h"
 	#include "Shaders\Compiled\BasicVS.h"
+
 	#include "Shaders\Compiled\SimplePS.h"
 	#include "Shaders\Compiled\SimpleVS.h"
+	#include "Shaders\Compiled\SimpleGS.h"
 }
 
 using namespace DirectX;
@@ -66,8 +68,8 @@ bool DemoScene::CreateDeviceDependentResources()
 	DX::ThrowIfFailed(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount,
 		g_BasicVS, sizeof(g_BasicVS), layoutPosNormalTex.ReleaseAndGetAddressOf()));
 
-	m_BasicEffect.Create(m_Device.Get(), layoutPosNormalTex, g_BasicVS, sizeof(g_BasicVS), g_BasicPS, sizeof(g_BasicPS));
-	m_SimpleEffect.Create(m_Device.Get(), layoutPosNormalTex, g_SimpleVS, sizeof(g_SimpleVS), g_SimplePS, sizeof(g_SimplePS));
+	m_BasicShader.Create(m_Device.Get(), layoutPosNormalTex, g_BasicVS, sizeof(g_BasicVS), g_BasicPS, sizeof(g_BasicPS));
+	m_SimpleShader.Create(m_Device.Get(), layoutPosNormalTex, g_SimpleVS, sizeof(g_SimpleVS), g_SimplePS, sizeof(g_SimplePS), g_SimpleGS, sizeof(g_SimpleGS));
 
 #pragma region Load Textures
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\WireFence.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
@@ -493,15 +495,14 @@ void DemoScene::Clear()
 
 void DemoScene::PrepareForRendering()
 {
-	m_BasicEffect.Bind(m_ImmediateContext.Get());
+	m_BasicShader.Bind(m_ImmediateContext.Get());
+	m_CbPerFrame.SetData(m_ImmediateContext.Get(), m_CbPerFrameData);
 
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_ImmediateContext->PSSetSamplers(0, 1, m_SamplerAnisotropic.GetAddressOf());
 	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
 	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
 	m_ImmediateContext->PSSetConstantBuffers(1, 1, m_CbPerFrame.GetAddressOf());
-
-	m_CbPerFrame.SetData(m_ImmediateContext.Get(), m_CbPerFrameData);
 }
 
 
@@ -527,9 +528,8 @@ void DemoScene::DrawScene()
 	//======================================== planar shadows ==============================================================//
 	static Drawable* drawablesShadow[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
 
-	m_SimpleEffect.Bind(m_ImmediateContext.Get());
-
-	m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
+	m_SimpleShader.Bind(m_ImmediateContext.Get());
+	m_ImmediateContext->GSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
 	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
 
 	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), NULL, 0xffffffff);
