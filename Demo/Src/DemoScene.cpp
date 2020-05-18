@@ -524,37 +524,60 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
-
-	//======================================== planar shadows ==============================================================//
-	static Drawable* drawablesShadow[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
-
+	//=================================  visualize normals ========================================//
+	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 	m_SimpleShader.Bind(m_ImmediateContext.Get());
 	m_ImmediateContext->GSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
 	m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
 
-	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), NULL, 0xffffffff);
-	m_ImmediateContext->OMSetDepthStencilState(m_DSSNoDoubleBlend.Get(), 0);
-
-	XMVECTOR shadowPlane = XMPlaneFromPointNormal(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-	XMMATRIX shadowMatrix = XMMatrixShadow(shadowPlane, -XMLoadFloat3(&m_CbPerFrameData.DirLight.Direction));
 	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
 
-	for (auto const& it : drawablesShadow)
+	for (auto const& it : drawables)
 	{
-		XMMATRIX world = it->GetWorld() * shadowMatrix * XMMatrixTranslation(0.0f, 0.001f, 0.0f);
-		
-		m_CbConstantsData.Color = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.4f); 
-		m_CbConstantsData.WorldViewProj = Helpers::XMMatrixToStorage(world * viewProj);
+		m_CbConstantsData.Color = XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+		m_CbConstantsData.WorldViewProj = Helpers::XMMatrixToStorage(it->GetWorld() * viewProj);
 
 		m_CbConstants.SetData(m_ImmediateContext.Get(), m_CbConstantsData);
 
+		m_ImmediateContext->PSSetShaderResources(0, 1, it->TextureSRV.GetAddressOf());
 		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
 		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
 
-	//rebind relevant shaders, constant buffers and input layout
 	PrepareForRendering();
+	//======================================================================================================//
+
+	//======================================== planar shadows ==============================================================//
+	//static Drawable* drawablesShadow[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
+
+	//m_SimpleShader.Bind(m_ImmediateContext.Get());
+	//m_ImmediateContext->GSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
+	//m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
+
+	//m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), NULL, 0xffffffff);
+	//m_ImmediateContext->OMSetDepthStencilState(m_DSSNoDoubleBlend.Get(), 0);
+
+	//XMVECTOR shadowPlane = XMPlaneFromPointNormal(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+	//XMMATRIX shadowMatrix = XMMatrixShadow(shadowPlane, -XMLoadFloat3(&m_CbPerFrameData.DirLight.Direction));
+	//XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
+
+	//for (auto const& it : drawablesShadow)
+	//{
+	//	XMMATRIX world = it->GetWorld() * shadowMatrix * XMMatrixTranslation(0.0f, 0.001f, 0.0f);
+	//	
+	//	m_CbConstantsData.Color = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.4f); 
+	//	m_CbConstantsData.WorldViewProj = Helpers::XMMatrixToStorage(world * viewProj);
+
+	//	m_CbConstants.SetData(m_ImmediateContext.Get(), m_CbConstantsData);
+
+	//	m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
+	//	m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
+	//	m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
+	//}
+
+	////rebind relevant shaders, constant buffers and input layout
+	//PrepareForRendering();
 
 	//==================================================================================================================//
 

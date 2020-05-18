@@ -146,13 +146,13 @@
     <FxCompile Include="Src\Shaders\Basic\VertexShader.hlsl">
       <Filter>Shaders\Basic</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Shaders\Simple\SimplePS.hlsl">
+    <FxCompile Include="Src\Shaders\Simple\GeometryShader.hlsl">
       <Filter>Shaders\Simple</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Shaders\Simple\SimpleVS.hlsl">
+    <FxCompile Include="Src\Shaders\Simple\PixelShader.hlsl">
       <Filter>Shaders\Simple</Filter>
     </FxCompile>
-    <FxCompile Include="Src\Shaders\Simple\SimpleGS.hlsl">
+    <FxCompile Include="Src\Shaders\Simple\VertexShader.hlsl">
       <Filter>Shaders\Simple</Filter>
     </FxCompile>
   </ItemGroup>

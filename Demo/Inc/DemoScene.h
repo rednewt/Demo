@@ -41,9 +41,9 @@ private:
 
 	} m_CbConstantsData;
 
-	static_assert(sizeof(GS_PS_CbConstants_SimpleShader) % 16 == 0, "VS_PS_CbConstants not 16-byte aligned");
-	static_assert(sizeof(PS_CbPerFrame_BasicShader) % 16 == 0, "PS_ConstantBufferPerFrame struct not 16-byte aligned");
-	static_assert(sizeof(VS_PS_CbPerObject_BasicShader) % 16 == 0, "VS_PS_ConstantBufferPerObject struct not 16-byte aligned");
+	static_assert(sizeof(GS_PS_CbConstants_SimpleShader) % 16 == 0, "struct not 16-byte aligned");
+	static_assert(sizeof(PS_CbPerFrame_BasicShader) % 16 == 0, "struct not 16-byte aligned");
+	static_assert(sizeof(VS_PS_CbPerObject_BasicShader) % 16 == 0, "struct not 16-byte aligned");
 
 
 	std::unique_ptr<Drawable> m_DrawableBox;
