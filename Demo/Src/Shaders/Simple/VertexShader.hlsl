@@ -1,13 +1,7 @@
 #include "Common.hlsli"
 
 
-VertexOut main( VertexIn vin )
+float4 main( VertexIn vin ) : SV_Position
 {
-    VertexOut vout;
-    
-    vout.NormalL = vin.NormalL;
-    vout.Tex = vin.Tex;
-    vout.PosL = float4(vin.PosL, 1.0f);
-
-    return vout;
+    return mul(float4(vin.PosL, 1.0f), gWorldViewProj);
 }
