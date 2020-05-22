@@ -2,7 +2,7 @@
 
 #include "DemoBase.h"
 #include "ConstantBuffer.h"
-#include "Shader.h"
+#include "Shaders.h"
 
 struct Drawable;
 
@@ -11,28 +11,7 @@ class DemoScene : public DemoBase
 private:
 	using Super = DemoBase;
 
-	struct VS_PS_CbPerObject_BasicShader
-	{
-		DirectX::XMFLOAT4X4 WorldViewProj;
-		DirectX::XMFLOAT4X4 World;
-		DirectX::XMFLOAT4X4 WorldInvTranspose;
-		DirectX::XMFLOAT4X4 TextureTransform;
-		Material Material;
 
-	} m_CbPerObjectData;
-
-	struct PS_CbPerFrame_BasicShader
-	{
-		DirectionalLight DirLight;
-		PointLight PointLight;
-		SpotLight SpotLight;
-
-		DirectX::XMFLOAT3 EyePos;
-		float pad;
-
-		FogProperties Fog;
-
-	} m_CbPerFrameData;
 
 	struct GS_PS_CbConstants_SimpleShader
 	{
@@ -42,8 +21,7 @@ private:
 	} m_CbConstantsData;
 
 	static_assert(sizeof(GS_PS_CbConstants_SimpleShader) % 16 == 0, "struct not 16-byte aligned");
-	static_assert(sizeof(PS_CbPerFrame_BasicShader) % 16 == 0, "struct not 16-byte aligned");
-	static_assert(sizeof(VS_PS_CbPerObject_BasicShader) % 16 == 0, "struct not 16-byte aligned");
+
 
 
 	std::unique_ptr<Drawable> m_DrawableBox;
@@ -53,12 +31,11 @@ private:
 	std::unique_ptr<Drawable> m_DrawableGrid;
 	std::unique_ptr<Drawable> m_DrawableMirror;
 
-	Shader m_BasicShader;
+	BasicEffect m_BasicEffect;
 	Shader m_SimpleShader;
 
 	//basic shader constant buffers
-	ConstantBuffer<VS_PS_CbPerObject_BasicShader> m_CbPerObject;
-	ConstantBuffer<PS_CbPerFrame_BasicShader> m_CbPerFrame;
+
 	//simple shader constant buffers
 	ConstantBuffer<GS_PS_CbConstants_SimpleShader> m_CbConstants;
 
@@ -78,6 +55,10 @@ private:
 
 	DirectX::XMFLOAT4X4 m_CameraView;
 	DirectX::XMFLOAT4X4 m_CameraProjection;
+
+	DirectionalLight m_DirLight;
+	PointLight m_PointLight;
+	SpotLight m_SpotLight;
 public:
 	explicit DemoScene(const HWND& hwnd);
 	DemoScene(const DemoScene&) = delete;
@@ -95,5 +76,5 @@ private:
 	void RenderToStencil();
 	void RenderReflections();
 	void ResetStates();
-	void FillPerObjectConstantBuffer(Drawable* const drawable);
+	void SetBasicEffectParams(Drawable* const drawable);
 };

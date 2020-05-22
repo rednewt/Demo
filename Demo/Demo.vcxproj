@@ -188,7 +188,7 @@
     <ClInclude Include="Inc\imstb_truetype.h" />
     <ClInclude Include="Inc\Lights.h" />
     <ClInclude Include="Inc\pch.h" />
-    <ClInclude Include="Inc\Shader.h" />
+    <ClInclude Include="Inc\Shaders.h" />
     <ClInclude Include="Inc\Timer.h" />
     <ClInclude Include="Inc\Vertex.h" />
   </ItemGroup>
@@ -239,6 +239,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Src\Shaders.cpp" />
     <ClCompile Include="Src\Timer.cpp" />
     <ClCompile Include="Src\Vertex.cpp" />
   </ItemGroup>

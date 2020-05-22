@@ -94,7 +94,7 @@
     <ClInclude Include="Inc\ConstantBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Inc\Shader.h">
+    <ClInclude Include="Inc\Shaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -136,6 +136,9 @@
       <Filter>Source Files\imgui</Filter>
     </ClCompile>
     <ClCompile Include="Src\Helpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\Shaders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
