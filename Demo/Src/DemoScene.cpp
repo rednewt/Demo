@@ -16,8 +16,6 @@ namespace
 {
 	#include "Shaders\Compiled\BasicPS.h"
 	#include "Shaders\Compiled\BasicVS.h"
-	#include "Shaders\Compiled\SimplePS.h"
-	#include "Shaders\Compiled\SimpleVS.h"
 }
 
 using namespace DirectX;
@@ -25,7 +23,6 @@ using namespace DirectX;
 DemoScene::DemoScene(const HWND& hwnd) :
 	Super(hwnd)
 {
-	
 	m_DrawableBox = std::make_unique<Drawable>();
 	m_DrawableSphere = std::make_unique<Drawable>();
 	m_DrawableTorus = std::make_unique<Drawable>();
@@ -33,7 +30,14 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableGrid = std::make_unique<Drawable>();
 	m_DrawableMirror = std::make_unique<Drawable>();
 
-	
+	//Setup DirectionalLight
+	m_DirLight.SetDirection(XMFLOAT3(-1.0f, -1.0f, 0.0f));
+	//Setup Pointlight
+	m_PointLight.Position = XMFLOAT3(0.0f, 2.0f, -2.0f);
+	//Setup Spotlight
+	m_SpotLight.Position = XMFLOAT3(-6.0f, 4.0f, 6.0f);
+	m_SpotLight.Direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
+	m_SpotLight.SpotPower = 2.0f;
 
 	//Setup some material properties other than default
 	m_DrawableBox->Material.Ambient = XMFLOAT4(0.35f, 0.35f, 0.35f, 1.0f);
@@ -48,15 +52,12 @@ DemoScene::DemoScene(const HWND& hwnd) :
 
 bool DemoScene::CreateDeviceDependentResources()
 {
-
-	m_CbConstants.Create(m_Device.Get());
-
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> layoutPosNormalTex;
 	DX::ThrowIfFailed(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount,
 		g_BasicVS, sizeof(g_BasicVS), layoutPosNormalTex.ReleaseAndGetAddressOf()));
 
 	m_BasicEffect.Create(m_Device.Get(), layoutPosNormalTex);
-	//m_SimpleShader.Create(m_Device.Get(), layoutPosNormalTex, g_SimpleVS, sizeof(g_SimpleVS), g_SimplePS, sizeof(g_SimplePS));
+	m_SimpleEffect.Create(m_Device.Get(), layoutPosNormalTex);
 
 #pragma region Load Textures
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\WireFence.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
@@ -242,225 +243,229 @@ void DemoScene::UpdateScene(float dt)
 
 
 	m_BasicEffect.SetEyePosition(eyePosition);
+	m_BasicEffect.SetFog(m_Fog);
 
-//#pragma region ImGui Widgets
-//	if (!ImGui::Begin("Scene"))
-//	{
-//		ImGui::End();
-//		return;
-//	}
-//
-//	if (ImGui::CollapsingHeader("Screen Resolution"))
-//	{
-//		//input of client size area
-//		static int inputWidth = m_ClientWidth;
-//		static int inputHeight = m_ClientHeight;
-//
-//		ImGui::InputInt("Width", &inputWidth, 100, 200);
-//		ImGui::InputInt("Height", &inputHeight, 100, 200);
-//		
-//		if (ImGui::Button("Apply"))
-//		{
-//			//Should probably clamp it on min/max values but works for now
-//			if (inputWidth < MIN_WIDTH || inputHeight < MIN_HEIGHT ||
-//				inputWidth > MAX_WIDTH || inputHeight > MAX_HEIGHT)
-//			{
-//				inputWidth = MIN_WIDTH;
-//				inputHeight = MIN_HEIGHT;
-//			}
-//
-//			if (inputWidth == m_ClientWidth && inputHeight == m_ClientHeight)
-//				return;
-//
-//			//Calculate window size from client size
-//			RECT wr = { 0, 0, inputWidth, inputHeight };
-//			AdjustWindowRect(&wr, g_WindowStyle, 0);
-//
-//			UINT windowWidth = static_cast<UINT>(wr.right - wr.left);
-//			UINT windowHeight = static_cast<UINT>(wr.bottom - wr.top);
-//			
-//			//Resize window area
-//			assert(SetWindowPos(m_MainWindow, 0, 0, 0, windowWidth, windowHeight,
-//				SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER) != 0);
-//			
-//			//Resize color & depth buffers
-//			Super::OnResize();
-//
-//		}
-//	}
-//
-//	if (ImGui::CollapsingHeader("Camera"))
-//	{
-//		ImGui::DragFloat3("EyePos", reinterpret_cast<float*>(&initEyePos), 1.0f, -100.0f, 100.0f, "%.2f");
-//		ImGui::DragFloat3("Focus", reinterpret_cast<float*>(&focus), 1.0f, -100.0f, 100.0f), "%.2f";
-//		
-//		if (XMVector3Equal(initEyePos, XMVectorZero()))
-//			initEyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
-//
-//		ImGui::SliderFloat("Rotate-Y", &cameraAngle, 0.0f, 360.0f);
-//	}
-//
-//	//if (ImGui::CollapsingHeader("Effects"))
-//	//{
-//	//	if (ImGui::TreeNode("Fog"))
-//	//	{
-//	//		static bool isActive = false;
-//	//		if (ImGui::Checkbox("Enabled", &isActive))
-//	//		{
-//	//			if (isActive)
-//	//				m_CbPerFrameData.Fog.FogEnabled = 1.0f;
-//	//			else
-//	//				m_CbPerFrameData.Fog.FogEnabled = 0.0f;
-//	//		}
-//
-//	//		ImGui::InputFloat("Fog Start", &m_CbPerFrameData.Fog.FogStart);
-//	//		ImGui::InputFloat("Fog Range", &m_CbPerFrameData.Fog.FogRange);
-//	//		ImGui::ColorEdit3("Fog Color", reinterpret_cast<float*>(&m_CbPerFrameData.Fog.FogColor));
-//
-//	//		ImGui::TreePop();
-//	//	}
-//	//}
-//
-//	if (ImGui::CollapsingHeader("Lights"))
-//	{
-//		if (ImGui::TreeNode("Directional Light"))
-//		{
-//			static bool isActive = true;
-//			static XMFLOAT3 oldDirection;
-//			static XMFLOAT4 oldAmbient;
-//			if (ImGui::Checkbox("Is Active##1", &isActive))
-//			{
-//				if (!isActive)
-//				{
-//					oldDirection = m_DirLight.Direction;
-//					oldAmbient = m_DirLight.Ambient;
-//
-//					//setting DirLightVector to zero-vector only zeros out diffuse & specular color
-//					m_DirLight.Direction = XMFLOAT3(0.0f, 0.0f, 0.0f);
-//					//we still need to zero out ambient color manually
-//					m_DirLight.Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-//				}
-//				else
-//				{
-//					m_DirLight.Ambient = oldAmbient;
-//					m_DirLight.Direction = oldDirection;
-//				}
-//			}
-//
-//			ImGui::ColorEdit4("Ambient##1", reinterpret_cast<float*>(&m_DirLight.Ambient), 2);
-//			ImGui::ColorEdit4("Diffuse##1", reinterpret_cast<float*>(&m_DirLight.Diffuse), 2);
-//			ImGui::ColorEdit3("Specular##1", reinterpret_cast<float*>(&m_DirLight.Specular), 2);
-//			ImGui::InputFloat3("Direction##1", reinterpret_cast<float*>(&m_DirLight.Direction), 2);
-//
-//			ImGui::TreePop();
-//		}
-//
-//		if (ImGui::TreeNode("Point Light"))
-//		{
-//			static bool isActive = true;
-//			static float oldRange;
-//			if (ImGui::Checkbox("Is Active##2", &isActive))
-//			{
-//				if (!isActive)
-//				{
-//					oldRange = m_PointLight.Range;
-//					m_PointLight.Range = 0;
-//				}
-//				else
-//					m_PointLight.Range = oldRange;
-//			}
-//
-//			ImGui::ColorEdit4("Ambient##2", reinterpret_cast<float*>(&m_PointLight.Ambient), 2);
-//			ImGui::ColorEdit4("Diffuse##2", reinterpret_cast<float*>(&m_PointLight.Diffuse), 2);
-//			ImGui::ColorEdit3("Specular##2", reinterpret_cast<float*>(m_PointLight.Specular), 2);
-//			ImGui::DragFloat3("Position##1", reinterpret_cast<float*>(&m_PointLight.Position));
-//			ImGui::InputFloat("Range##1", &m_PointLight.Range, 2);
-//			ImGui::InputFloat3("Attenuation##1", reinterpret_cast<float*>(&m_PointLight.Attenuation), 2);
-//
-//
-//			ImGui::TreePop();
-//		}
-//
-//		if (ImGui::TreeNode("Spot Light"))
-//		{
-//			static bool isActive = true;
-//			static float oldRange;
-//			if (ImGui::Checkbox("Is Active##3", &isActive))
-//			{
-//				if (!isActive)
-//				{
-//					oldRange = m_SpotLight.Range;
-//					m_SpotLight.Range = 0;
-//				}
-//				else
-//					m_SpotLight.Range = oldRange;
-//			}
-//
-//			ImGui::ColorEdit4("Ambient##5", reinterpret_cast<float*>(&m_SpotLight.Ambient), 2);
-//			ImGui::ColorEdit4("Diffuse##5", reinterpret_cast<float*>(m_SpotLight.Diffuse), 2);
-//			ImGui::ColorEdit3("Specular##5", reinterpret_cast<float*>(&m_SpotLight.Specular), 2);
-//			ImGui::DragFloat3("Position##2", reinterpret_cast<float*>(&m_SpotLight.Position));
-//			ImGui::InputFloat("Range##2", reinterpret_cast<float*>(&m_SpotLight.Range), 2);
-//			ImGui::InputFloat("SpotPower", &m_SpotLight.SpotPower, 2);
-//			ImGui::InputFloat3("Direction##2", reinterpret_cast<float*>(&m_SpotLight.Direction), 2);
-//			ImGui::InputFloat3("Attenuation##2", reinterpret_cast<float*>(&m_SpotLight.Attenuation), 2);
-//
-//			ImGui::TreePop();
-//		}
-//	}
-//
-//	if (ImGui::CollapsingHeader("Object Materials"))
-//	{
-//		if (ImGui::TreeNode("Sphere"))
-//		{
-//			ImGui::InputFloat4("Ambient##3", reinterpret_cast<float*>(&m_DrawableSphere->Material.Ambient), 2);
-//			ImGui::InputFloat4("Diffuse##3", reinterpret_cast<float*>(&m_DrawableSphere->Material.Diffuse), 2);
-//			ImGui::InputFloat4("Specular##3", reinterpret_cast<float*>(&m_DrawableSphere->Material.Specular), 2);
-//
-//			ImGui::TreePop();
-//		}
-//
-//		if (ImGui::TreeNode("Box"))
-//		{
-//			ImGui::InputFloat4("Ambient##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Ambient), 2);
-//			ImGui::InputFloat4("Diffuse##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Diffuse), 2);
-//			ImGui::InputFloat4("Specular##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Specular), 2);
-//
-//			ImGui::TreePop();
-//		}
-//
-//
-//		if (ImGui::TreeNode("Torus"))
-//		{
-//			ImGui::InputFloat4("Ambient##5", reinterpret_cast<float*>(&m_DrawableTorus->Material.Ambient), 2);
-//			ImGui::InputFloat4("Diffuse##5", reinterpret_cast<float*>(&m_DrawableTorus->Material.Diffuse), 2);
-//			ImGui::InputFloat4("Specular##5", reinterpret_cast<float*>(&m_DrawableTorus->Material.Specular), 2);
-//
-//			ImGui::TreePop();
-//		}
-//
-//
-//		if (ImGui::TreeNode("Teapot"))
-//		{
-//			ImGui::InputFloat4("Ambient##6", reinterpret_cast<float*>(&m_DrawableTeapot->Material.Ambient), 2);
-//			ImGui::InputFloat4("Diffuse##6", reinterpret_cast<float*>(&m_DrawableTeapot->Material.Diffuse), 2);
-//			ImGui::InputFloat4("Specular##6", reinterpret_cast<float*>(&m_DrawableTeapot->Material.Specular), 2);
-//
-//			ImGui::TreePop();
-//		}
-//
-//		if (ImGui::TreeNode("Grid"))
-//		{
-//			ImGui::InputFloat4("Ambient##6", reinterpret_cast<float*>(&m_DrawableGrid->Material.Ambient), 2);
-//			ImGui::InputFloat4("Diffuse##6", reinterpret_cast<float*>(&m_DrawableGrid->Material.Diffuse), 2);
-//			ImGui::InputFloat4("Specular##6", reinterpret_cast<float*>(&m_DrawableGrid->Material.Specular), 2);
-//
-//			ImGui::TreePop();
-//		}
-//	}
-//	ImGui::End();
-//
-//#pragma endregion
+#pragma region ImGui Widgets
+	if (!ImGui::Begin("Scene"))
+	{
+		ImGui::End();
+		return;
+	}
+
+	if (ImGui::CollapsingHeader("Screen Resolution"))
+	{
+		//input of client size area
+		static int inputWidth = m_ClientWidth;
+		static int inputHeight = m_ClientHeight;
+
+		ImGui::InputInt("Width", &inputWidth, 100, 200);
+		ImGui::InputInt("Height", &inputHeight, 100, 200);
+		
+		if (ImGui::Button("Apply"))
+		{
+			//Should probably clamp it on min/max values but works for now
+			if (inputWidth < MIN_WIDTH || inputHeight < MIN_HEIGHT ||
+				inputWidth > MAX_WIDTH || inputHeight > MAX_HEIGHT)
+			{
+				inputWidth = MIN_WIDTH;
+				inputHeight = MIN_HEIGHT;
+			}
+
+			if (inputWidth == m_ClientWidth && inputHeight == m_ClientHeight)
+				return;
+
+			//Calculate window size from client size
+			RECT wr = { 0, 0, inputWidth, inputHeight };
+			AdjustWindowRect(&wr, g_WindowStyle, 0);
+
+			UINT windowWidth = static_cast<UINT>(wr.right - wr.left);
+			UINT windowHeight = static_cast<UINT>(wr.bottom - wr.top);
+			
+			//Resize window area
+			assert(SetWindowPos(m_MainWindow, 0, 0, 0, windowWidth, windowHeight,
+				SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER) != 0);
+			
+			//Resize color & depth buffers
+			Super::OnResize();
+
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Camera"))
+	{
+		ImGui::DragFloat3("EyePos", reinterpret_cast<float*>(&initEyePos), 1.0f, -100.0f, 100.0f, "%.2f");
+		ImGui::DragFloat3("Focus", reinterpret_cast<float*>(&focus), 1.0f, -100.0f, 100.0f), "%.2f";
+		
+		if (XMVector3Equal(initEyePos, XMVectorZero()))
+			initEyePos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+
+		ImGui::SliderFloat("Rotate-Y", &cameraAngle, 0.0f, 360.0f);
+	}
+
+	if (ImGui::CollapsingHeader("Effects"))
+	{
+		if (ImGui::TreeNode("Fog"))
+		{
+			static bool isActive = false;
+			if (ImGui::Checkbox("Enabled", &isActive))
+			{
+				if (isActive)
+					m_Fog.FogEnabled = 1.0f;
+				else
+					m_Fog.FogEnabled = 0.0f;
+			}
+
+			ImGui::InputFloat("Fog Start", &m_Fog.FogStart);
+			ImGui::InputFloat("Fog Range", &m_Fog.FogRange);
+			ImGui::ColorEdit3("Fog Color", reinterpret_cast<float*>(&m_Fog.FogColor));
+
+			ImGui::TreePop();
+		}
+	}
+
+	static XMFLOAT3 dirLightVec = m_DirLight.Direction;
+	if (ImGui::CollapsingHeader("Lights"))
+	{
+		if (ImGui::TreeNode("Directional Light"))
+		{
+			static bool isActive = true;
+			static XMFLOAT3 oldDirection;
+			static XMFLOAT4 oldAmbient;
+			if (ImGui::Checkbox("Is Active##1", &isActive))
+			{
+				if (!isActive)
+				{
+					oldDirection = dirLightVec;
+					oldAmbient = m_DirLight.Ambient;
+
+					//setting DirLightVector to zero-vector only zeros out diffuse & specular color
+					dirLightVec = XMFLOAT3(0.0f, 0.0f, 0.0f);
+					//we still need to zero out ambient color manually
+					m_DirLight.Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+				}
+				else
+				{
+					m_DirLight.Ambient = oldAmbient;
+					dirLightVec = oldDirection;
+				}
+			}
+
+			ImGui::ColorEdit4("Ambient##1", reinterpret_cast<float*>(&m_DirLight.Ambient), 2);
+			ImGui::ColorEdit4("Diffuse##1", reinterpret_cast<float*>(&m_DirLight.Diffuse), 2);
+			ImGui::ColorEdit3("Specular##1", reinterpret_cast<float*>(&m_DirLight.Specular), 2);
+			
+			ImGui::InputFloat3("Direction##1", reinterpret_cast<float*>(&dirLightVec), 2);
+			m_DirLight.SetDirection(dirLightVec);
+
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNode("Point Light"))
+		{
+			static bool isActive = true;
+			static float oldRange;
+			if (ImGui::Checkbox("Is Active##2", &isActive))
+			{
+				if (!isActive)
+				{
+					oldRange = m_PointLight.Range;
+					m_PointLight.Range = 0;
+				}
+				else
+					m_PointLight.Range = oldRange;
+			}
+
+			ImGui::ColorEdit4("Ambient##2", reinterpret_cast<float*>(&m_PointLight.Ambient), 2);
+			ImGui::ColorEdit4("Diffuse##2", reinterpret_cast<float*>(&m_PointLight.Diffuse), 2);
+			ImGui::ColorEdit3("Specular##2", reinterpret_cast<float*>(&m_PointLight.Specular), 2);
+			ImGui::DragFloat3("Position##1", reinterpret_cast<float*>(&m_PointLight.Position));
+			ImGui::InputFloat("Range##1", &m_PointLight.Range, 2);
+			ImGui::InputFloat3("Attenuation##1", reinterpret_cast<float*>(&m_PointLight.Attenuation), 2);
+
+
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNode("Spot Light"))
+		{
+			static bool isActive = true;
+			static float oldRange;
+			if (ImGui::Checkbox("Is Active##3", &isActive))
+			{
+				if (!isActive)
+				{
+					oldRange = m_SpotLight.Range;
+					m_SpotLight.Range = 0;
+				}
+				else
+					m_SpotLight.Range = oldRange;
+			}
+
+			ImGui::ColorEdit4("Ambient##5", reinterpret_cast<float*>(&m_SpotLight.Ambient), 2);
+			ImGui::ColorEdit4("Diffuse##5", reinterpret_cast<float*>(&m_SpotLight.Diffuse), 2);
+			ImGui::ColorEdit3("Specular##5", reinterpret_cast<float*>(&m_SpotLight.Specular), 2);
+			ImGui::DragFloat3("Position##2", reinterpret_cast<float*>(&m_SpotLight.Position));
+			ImGui::InputFloat("Range##2", reinterpret_cast<float*>(&m_SpotLight.Range), 2);
+			ImGui::InputFloat("SpotPower", &m_SpotLight.SpotPower, 2);
+			ImGui::InputFloat3("Direction##2", reinterpret_cast<float*>(&m_SpotLight.Direction), 2);
+			ImGui::InputFloat3("Attenuation##2", reinterpret_cast<float*>(&m_SpotLight.Attenuation), 2);
+
+			ImGui::TreePop();
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Object Materials"))
+	{
+		if (ImGui::TreeNode("Sphere"))
+		{
+			ImGui::InputFloat4("Ambient##3", reinterpret_cast<float*>(&m_DrawableSphere->Material.Ambient), 2);
+			ImGui::InputFloat4("Diffuse##3", reinterpret_cast<float*>(&m_DrawableSphere->Material.Diffuse), 2);
+			ImGui::InputFloat4("Specular##3", reinterpret_cast<float*>(&m_DrawableSphere->Material.Specular), 2);
+
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNode("Box"))
+		{
+			ImGui::InputFloat4("Ambient##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Ambient), 2);
+			ImGui::InputFloat4("Diffuse##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Diffuse), 2);
+			ImGui::InputFloat4("Specular##4", reinterpret_cast<float*>(&m_DrawableBox->Material.Specular), 2);
+
+			ImGui::TreePop();
+		}
+
+
+		if (ImGui::TreeNode("Torus"))
+		{
+			ImGui::InputFloat4("Ambient##5", reinterpret_cast<float*>(&m_DrawableTorus->Material.Ambient), 2);
+			ImGui::InputFloat4("Diffuse##5", reinterpret_cast<float*>(&m_DrawableTorus->Material.Diffuse), 2);
+			ImGui::InputFloat4("Specular##5", reinterpret_cast<float*>(&m_DrawableTorus->Material.Specular), 2);
+
+			ImGui::TreePop();
+		}
+
+
+		if (ImGui::TreeNode("Teapot"))
+		{
+			ImGui::InputFloat4("Ambient##6", reinterpret_cast<float*>(&m_DrawableTeapot->Material.Ambient), 2);
+			ImGui::InputFloat4("Diffuse##6", reinterpret_cast<float*>(&m_DrawableTeapot->Material.Diffuse), 2);
+			ImGui::InputFloat4("Specular##6", reinterpret_cast<float*>(&m_DrawableTeapot->Material.Specular), 2);
+
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNode("Grid"))
+		{
+			ImGui::InputFloat4("Ambient##6", reinterpret_cast<float*>(&m_DrawableGrid->Material.Ambient), 2);
+			ImGui::InputFloat4("Diffuse##6", reinterpret_cast<float*>(&m_DrawableGrid->Material.Diffuse), 2);
+			ImGui::InputFloat4("Specular##6", reinterpret_cast<float*>(&m_DrawableGrid->Material.Specular), 2);
+
+			ImGui::TreePop();
+		}
+	}
+	ImGui::End();
+
+#pragma endregion
 }
 
 
@@ -496,47 +501,43 @@ void DemoScene::DrawScene()
 	static Drawable* drawables[] = { m_DrawableGrid.get(), m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
 	for (auto const& it : drawables)
 	{
-		SetBasicEffectParams(it);
+		FillBasicEffect(it);
 
 		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
 		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
 
-
 	//======================================== planar shadows ==============================================================//
-	//static Drawable* drawablesShadow[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
+	static Drawable* drawableShadows[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
 
-	//m_SimpleShader.Bind(m_ImmediateContext.Get());
-	//m_ImmediateContext->VSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
-	//m_ImmediateContext->PSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
+	m_SimpleEffect.Bind(m_ImmediateContext.Get());
 
-	//m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), NULL, 0xffffffff);
-	//m_ImmediateContext->OMSetDepthStencilState(m_DSSNoDoubleBlend.Get(), 0);
+	m_ImmediateContext->OMSetBlendState(m_BSTransparent.Get(), NULL, 0xffffffff);
+	m_ImmediateContext->OMSetDepthStencilState(m_DSSNoDoubleBlend.Get(), 0);
 
-	//XMVECTOR shadowPlane = XMPlaneFromPointNormal(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-	//XMMATRIX shadowMatrix = XMMatrixShadow(shadowPlane, -XMLoadFloat3(&m_CbPerFrameData.DirLight.Direction));
-	//XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
+	XMVECTOR shadowPlane = XMPlaneFromPointNormal(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+	XMMATRIX shadowMatrix = XMMatrixShadow(shadowPlane, -XMLoadFloat3(&m_DirLight.Direction));
+	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
 
-	//for (auto const& it : drawablesShadow)
-	//{
-	//	XMMATRIX world = it->GetWorld() * shadowMatrix * XMMatrixTranslation(0.0f, 0.001f, 0.0f);
-	//	
-	//	m_CbConstantsData.Color = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.4f); 
-	//	m_CbConstantsData.WorldViewProj = Helpers::XMMatrixToStorage(world * viewProj);
+	for (auto const& it : drawableShadows)
+	{
+		XMMATRIX world = it->GetWorld() * shadowMatrix * XMMatrixTranslation(0.0f, 0.001f, 0.0f);
+		
+		m_SimpleEffect.SetColor(XMVectorSet(0.0f, 0.0f, 0.0f, 0.4f));
+		m_SimpleEffect.SetWorldViewProj(world * viewProj);
 
-	//	m_CbConstants.SetData(m_ImmediateContext.Get(), m_CbConstantsData);
+		m_SimpleEffect.Apply(m_ImmediateContext.Get());
+		
+		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
+		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
+		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
+	}
 
-	//	m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
-	//	m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
-	//	m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
-	//}
-
-	////rebind relevant shaders, constant buffers and input layout
-	//PrepareForRendering();
+	//rebind relevant shaders, constant buffers and input layout
+	PrepareForRendering();
 
 	//==================================================================================================================//
-
 
 	//Mark mirror pixels in stencil buffer to 1
 	RenderToStencil();
@@ -552,7 +553,7 @@ void DemoScene::DrawScene()
 
 	for (auto const& it : transparentDrawables)
 	{
-		SetBasicEffectParams(it);
+		FillBasicEffect(it);
 
 		m_ImmediateContext->IASetVertexBuffers(0, 1, it->VertexBuffer.GetAddressOf(), &stride, &offset);
 		m_ImmediateContext->IASetIndexBuffer(it->IndexBuffer.Get(), it->IndexBufferFormat, 0);
@@ -565,7 +566,6 @@ void DemoScene::DrawScene()
 
 void DemoScene::RenderToStencil()
 {
-
 	UINT stride = sizeof(GeometricPrimitive::VertexType);
 	UINT offset = 0;
 
@@ -574,9 +574,8 @@ void DemoScene::RenderToStencil()
 	//disables depth write as well
 	m_ImmediateContext->OMSetDepthStencilState(m_DSSMarkPixels.Get(), 1);
 
-	SetBasicEffectParams(m_DrawableMirror.get());
+	FillBasicEffect(m_DrawableMirror.get());
 
-	m_ImmediateContext->PSSetShaderResources(0, 1, m_DrawableMirror->TextureSRV.GetAddressOf());
 	m_ImmediateContext->IASetVertexBuffers(0, 1, m_DrawableMirror->VertexBuffer.GetAddressOf(), &stride, &offset);
 	m_ImmediateContext->IASetIndexBuffer(m_DrawableMirror->IndexBuffer.Get(), m_DrawableMirror->IndexBufferFormat, 0);
 	m_ImmediateContext->DrawIndexed(m_DrawableMirror->IndexCount, 0, 0);
@@ -634,7 +633,7 @@ void DemoScene::RenderReflections()
 	m_BasicEffect.ApplyEffect(m_ImmediateContext.Get());
 }
 
-void DemoScene::SetBasicEffectParams(Drawable* const drawable)
+void DemoScene::FillBasicEffect(Drawable* const drawable)
 {
 	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
 

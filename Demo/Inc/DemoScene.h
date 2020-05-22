@@ -11,19 +11,6 @@ class DemoScene : public DemoBase
 private:
 	using Super = DemoBase;
 
-
-
-	struct GS_PS_CbConstants_SimpleShader
-	{
-		DirectX::XMFLOAT4X4 WorldViewProj;
-		DirectX::XMFLOAT4 Color;
-
-	} m_CbConstantsData;
-
-	static_assert(sizeof(GS_PS_CbConstants_SimpleShader) % 16 == 0, "struct not 16-byte aligned");
-
-
-
 	std::unique_ptr<Drawable> m_DrawableBox;
 	std::unique_ptr<Drawable> m_DrawableSphere;
 	std::unique_ptr<Drawable> m_DrawableTorus;
@@ -32,12 +19,7 @@ private:
 	std::unique_ptr<Drawable> m_DrawableMirror;
 
 	BasicEffect m_BasicEffect;
-	Shader m_SimpleShader;
-
-	//basic shader constant buffers
-
-	//simple shader constant buffers
-	ConstantBuffer<GS_PS_CbConstants_SimpleShader> m_CbConstants;
+	SimpleEffect m_SimpleEffect;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 
@@ -59,6 +41,7 @@ private:
 	DirectionalLight m_DirLight;
 	PointLight m_PointLight;
 	SpotLight m_SpotLight;
+	FogProperties m_Fog;
 public:
 	explicit DemoScene(const HWND& hwnd);
 	DemoScene(const DemoScene&) = delete;
@@ -76,5 +59,5 @@ private:
 	void RenderToStencil();
 	void RenderReflections();
 	void ResetStates();
-	void SetBasicEffectParams(Drawable* const drawable);
+	void FillBasicEffect(Drawable* const drawable);
 };

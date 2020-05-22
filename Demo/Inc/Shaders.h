@@ -17,7 +17,7 @@ public:
 	Shader(Shader const&) = delete;
 	Shader& operator=(Shader const&) = delete;
 
-protected:
+public:
 	void Create(ID3D11Device* device, const	Microsoft::WRL::ComPtr<ID3D11InputLayout>& inputLayout,
 		const void* pVertexShaderByteCode, SIZE_T vertexShaderByteLength,
 		const void* pPixelShaderByteCode, SIZE_T pixelShaderByteLength) 
@@ -40,8 +40,7 @@ protected:
 		DX::ThrowIfFailed(device->CreateGeometryShader(pGeometryShaderByteCode, geometryShaderByteLength, nullptr, m_GeometryShader.ReleaseAndGetAddressOf()));
 	}
 
-public:
-	virtual void Bind(ID3D11DeviceContext* context) const
+	void Bind(ID3D11DeviceContext* context) const
 	{
 		assert(context != nullptr);
 
@@ -52,6 +51,37 @@ public:
 	}
 };
 
+class SimpleEffect : public Shader
+{
+private:
+	struct VS_PS_CbConstants
+	{
+		DirectX::XMFLOAT4X4 WorldViewProj;
+		DirectX::XMFLOAT4 Color;
+
+	} m_CbConstantsData;
+
+	static_assert(sizeof(VS_PS_CbConstants) % 16 == 0, "struct not 16-byte aligned");
+
+	ConstantBuffer<VS_PS_CbConstants> m_CbConstants;
+public:
+	SimpleEffect() = default;
+	SimpleEffect(const SimpleEffect&) = delete;
+	SimpleEffect& operator=(const SimpleEffect&) = delete;
+
+	SimpleEffect(ID3D11Device* device, const Microsoft::WRL::ComPtr<ID3D11InputLayout>& inputLayout)
+	{
+		Create(device, inputLayout);
+	}
+
+	void Create(ID3D11Device* device, const	Microsoft::WRL::ComPtr<ID3D11InputLayout>& inputLayout);
+
+	void SetWorldViewProj(DirectX::FXMMATRIX worldViewProj);
+	void SetColor(DirectX::FXMVECTOR color);
+	void Apply(ID3D11DeviceContext* context);
+
+	void Bind(ID3D11DeviceContext* context) const;
+};
 
 class BasicEffect : public Shader
 {
@@ -112,5 +142,5 @@ public:
 	void SetSampler(ID3D11DeviceContext* context, ID3D11SamplerState* sampler);
 	void SetTexture(ID3D11DeviceContext* context, ID3D11ShaderResourceView* srv);
 
-	void Bind(ID3D11DeviceContext* context) const override;
+	void Bind(ID3D11DeviceContext* context) const;
 };

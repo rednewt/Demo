@@ -62,11 +62,6 @@ void BasicEffect::SetFog(const FogProperties& fog)
 	m_CbPerFrameData.Fog = fog;
 }
 
-void BasicEffect::ApplyEffect(ID3D11DeviceContext* context)
-{
-	m_CbPerFrame.SetData(context, m_CbPerFrameData);
-}
-
 void BasicEffect::SetSampler(ID3D11DeviceContext* context, ID3D11SamplerState* sampler)
 {
 	context->PSSetSamplers(0, 1, &sampler);
@@ -89,4 +84,9 @@ void BasicEffect::Bind(ID3D11DeviceContext* context) const
 void BasicEffect::Apply(ID3D11DeviceContext* context)
 {
 	m_CbPerObject.SetData(context, m_CbPerObjectData);
+}
+
+void BasicEffect::ApplyEffect(ID3D11DeviceContext* context)
+{
+	m_CbPerFrame.SetData(context, m_CbPerFrameData);
 }

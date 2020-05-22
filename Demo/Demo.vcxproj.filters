@@ -138,7 +138,10 @@
     <ClCompile Include="Src\Helpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Src\Shaders.cpp">
+    <ClCompile Include="Src\BasicEffect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Src\SimpleEffect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
