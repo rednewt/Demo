@@ -226,7 +226,6 @@ void DemoScene::UpdateScene(float dt)
 	static float angle = 0.0f;
 	angle += 45.0f * dt;
 	
-	XMMATRIX viewProj = view * proj;
 	XMMATRIX rotateY = XMMatrixRotationY(XMConvertToRadians(angle));
 	XMMATRIX rotateX = XMMatrixRotationX(XMConvertToRadians(angle));
 	XMMATRIX rotateZ = XMMatrixRotationZ(XMConvertToRadians(angle));
