@@ -64,7 +64,7 @@ namespace Helpers
 	{
 		D3D11_BUFFER_DESC desc = {};
 		desc.Usage = D3D11_USAGE_IMMUTABLE;
-		desc.ByteWidth = dataSize;
+		desc.ByteWidth = sizeof(T) * dataSize;
 		desc.BindFlags = bindFlag;
 
 		D3D11_SUBRESOURCE_DATA initData = {};

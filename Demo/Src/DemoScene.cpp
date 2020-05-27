@@ -200,13 +200,15 @@ void DemoScene::CreateBuffers()
 	m_DrawableGrid->Create(m_Device.Get(), vertices, indices);
 
 
-	std::vector<TreePointSprite> points;
-	points.push_back(TreePointSprite(XMFLOAT3(-5.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)));
-	points.push_back(TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)));
-	points.push_back(TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 15.0f), XMFLOAT2(5.0f, 10.0f)));
-	points.push_back(TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 20.0f), XMFLOAT2(5.0f, 10.0f)));
-
-	Helpers::CreateBuffer(m_Device.Get(), points, D3D11_BIND_VERTEX_BUFFER, m_TreePointsVB.ReleaseAndGetAddressOf());
+	TreePointSprite points[] =
+	{
+		TreePointSprite(XMFLOAT3(-5.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)),
+		TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)),
+		TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 15.0f), XMFLOAT2(5.0f, 10.0f)),
+		TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 20.0f), XMFLOAT2(5.0f, 10.0f))
+	};
+	
+	Helpers::CreateBuffer(m_Device.Get(), points, sizeof(points) / sizeof(points[0]), D3D11_BIND_VERTEX_BUFFER, m_TreePointsVB.ReleaseAndGetAddressOf());
 }
 
 bool DemoScene::Initialize()
