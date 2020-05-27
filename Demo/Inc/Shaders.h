@@ -51,7 +51,7 @@ public:
 	}
 };
 
-class SimpleEffect : public Shader
+class SimpleEffect : Shader
 {
 private:
 	struct VS_PS_CbConstants
@@ -83,7 +83,7 @@ public:
 	void Bind(ID3D11DeviceContext* context) const;
 };
 
-class BasicEffect : public Shader
+class BasicEffect : Shader
 {
 private:
 	struct VS_PS_CbPerObject
@@ -137,10 +137,57 @@ public:
 	void SetSpotLight(const SpotLight& light);
 	void SetEyePosition(DirectX::FXMVECTOR eyePos);
 	void SetFog(const FogProperties& fog);
-	void ApplyEffect(ID3D11DeviceContext* context);
+	void ApplyPerFrameConstants(ID3D11DeviceContext* context);
 	
 	void SetSampler(ID3D11DeviceContext* context, ID3D11SamplerState* sampler);
 	void SetTexture(ID3D11DeviceContext* context, ID3D11ShaderResourceView* srv);
 
 	void Bind(ID3D11DeviceContext* context) const;
+};
+
+
+class BillboardEffect : Shader
+{
+private:
+	struct GS_CbPerFrame
+	{
+		DirectX::XMFLOAT3 EyePos;
+		float pad;
+
+	} m_CbPerFrameData;
+
+	struct GS_CbPerObject
+	{
+		DirectX::XMFLOAT4X4 ViewProj;
+
+	} m_CbPerObjectData;
+
+	ConstantBuffer<GS_CbPerFrame> m_CbPerFrame;
+	ConstantBuffer<GS_CbPerObject> m_CbPerObject;
+
+	static_assert(sizeof(GS_CbPerFrame) % 16 == 0, "struct not 16-byte aligned");
+	static_assert(sizeof(GS_CbPerObject) % 16 == 0, "struct not 16-byte aligned");
+public:
+	BillboardEffect() = default;
+	BillboardEffect(const BillboardEffect&) = delete;
+	BillboardEffect& operator=(const BillboardEffect&) = delete;
+
+	BillboardEffect(ID3D11Device* device, const	Microsoft::WRL::ComPtr<ID3D11InputLayout>& inputLayout)
+	{
+		Create(device, inputLayout);
+	}
+
+	void Create(ID3D11Device* device, const	Microsoft::WRL::ComPtr<ID3D11InputLayout>& inputLayout);
+
+	void SetEyePos(DirectX::FXMVECTOR eyePos);
+	void ApplyPerFrameConstants(ID3D11DeviceContext* context);
+
+	void SetViewProj(DirectX::FXMMATRIX viewProj);
+	void Apply(ID3D11DeviceContext* context);
+
+	void SetSampler(ID3D11DeviceContext* context, ID3D11SamplerState* sampler);
+	void SetTextureArray(ID3D11DeviceContext* context, ID3D11ShaderResourceView* srv);
+
+	void Bind(ID3D11DeviceContext* context) const;
+
 };

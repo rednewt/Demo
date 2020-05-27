@@ -20,6 +20,7 @@ private:
 
 	BasicEffect m_BasicEffect;
 	SimpleEffect m_SimpleEffect;
+	BillboardEffect m_BillboardEffect;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> m_SamplerAnisotropic;
 
@@ -42,6 +43,9 @@ private:
 	PointLight m_PointLight;
 	SpotLight m_SpotLight;
 	FogProperties m_Fog;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_TreePointsVB;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_TreeTexArraySRV;
 public:
 	explicit DemoScene(const HWND& hwnd);
 	DemoScene(const DemoScene&) = delete;

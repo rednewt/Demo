@@ -10,6 +10,10 @@ struct SimpleVertex
 
 struct TreePointSprite
 {
+	TreePointSprite(const DirectX::XMFLOAT3& center, const DirectX::XMFLOAT2 size) :
+		Center(center), Size(size)
+	{}
+
 	DirectX::XMFLOAT3 Center;
 	DirectX::XMFLOAT2 Size;
 

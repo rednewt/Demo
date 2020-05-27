@@ -7,6 +7,7 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 #include "Drawable.h"
+#include "Vertex.h"
 
 //Used in AdjustWindowRect(..) while resizing 
 extern DWORD g_WindowStyle;
@@ -14,8 +15,8 @@ extern DWORD g_WindowStyle;
 //These headers may not be present, so you may need to build the project once
 namespace
 {
-	#include "Shaders\Compiled\BasicPS.h"
 	#include "Shaders\Compiled\BasicVS.h"
+	#include "Shaders\Compiled\BillboardVS.h"
 }
 
 using namespace DirectX;
@@ -59,6 +60,12 @@ bool DemoScene::CreateDeviceDependentResources()
 	m_BasicEffect.Create(m_Device.Get(), layoutPosNormalTex);
 	m_SimpleEffect.Create(m_Device.Get(), layoutPosNormalTex);
 
+	Microsoft::WRL::ComPtr<ID3D11InputLayout> layoutPointSize;
+	DX::ThrowIfFailed(m_Device->CreateInputLayout(TreePointSprite::InputElements, TreePointSprite::ElementCount,
+		g_BillboardVS, sizeof(g_BillboardVS), layoutPointSize.ReleaseAndGetAddressOf()));
+
+	m_BillboardEffect.Create(m_Device.Get(), layoutPointSize);
+	
 #pragma region Load Textures
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\WireFence.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
@@ -76,6 +83,9 @@ bool DemoScene::CreateDeviceDependentResources()
 		return false;
 
 	if FAILED(CreateWICTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\flooring.png", 0, m_DrawableTeapot->TextureSRV.ReleaseAndGetAddressOf()))
+		return false;
+
+	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\treeArray.dds", 0, m_TreeTexArraySRV.ReleaseAndGetAddressOf()))
 		return false;
 #pragma endregion
 
@@ -189,6 +199,14 @@ void DemoScene::CreateBuffers()
 	Helpers::CreateGrid(vertices, indices, 100, 100);
 	m_DrawableGrid->Create(m_Device.Get(), vertices, indices);
 
+
+	std::vector<TreePointSprite> points;
+	points.push_back(TreePointSprite(XMFLOAT3(-5.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)));
+	points.push_back(TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)));
+	points.push_back(TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 15.0f), XMFLOAT2(5.0f, 10.0f)));
+	points.push_back(TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 20.0f), XMFLOAT2(5.0f, 10.0f)));
+
+	Helpers::CreateBuffer(m_Device.Get(), points, D3D11_BIND_VERTEX_BUFFER, m_TreePointsVB.ReleaseAndGetAddressOf());
 }
 
 bool DemoScene::Initialize()
@@ -243,6 +261,10 @@ void DemoScene::UpdateScene(float dt)
 
 	m_BasicEffect.SetEyePosition(eyePosition);
 	m_BasicEffect.SetFog(m_Fog);
+	m_BasicEffect.ApplyPerFrameConstants(m_ImmediateContext.Get());
+
+	m_BillboardEffect.SetEyePos(eyePosition);
+	m_BillboardEffect.ApplyPerFrameConstants(m_ImmediateContext.Get());
 
 #pragma region ImGui Widgets
 	if (!ImGui::Begin("Scene"))
@@ -483,7 +505,6 @@ void DemoScene::PrepareForRendering()
 {
 	m_BasicEffect.Bind(m_ImmediateContext.Get());
 	m_BasicEffect.SetSampler(m_ImmediateContext.Get(), m_SamplerAnisotropic.Get());
-	m_BasicEffect.ApplyEffect(m_ImmediateContext.Get());
 
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 }
@@ -494,6 +515,7 @@ void DemoScene::DrawScene()
 	Clear();
 	PrepareForRendering();
 
+	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
 	UINT stride = sizeof(GeometricPrimitive::VertexType);
 	UINT offset = 0;
 
@@ -507,7 +529,27 @@ void DemoScene::DrawScene()
 		m_ImmediateContext->DrawIndexed(it->IndexCount, 0, 0);
 	}
 
+	//======================================== tree billboards =============================================================//
+
+	UINT treeStride = sizeof(TreePointSprite);
+
+	m_BillboardEffect.Bind(m_ImmediateContext.Get());
+
+	m_BillboardEffect.SetViewProj(viewProj);
+	m_BillboardEffect.SetSampler(m_ImmediateContext.Get(), m_SamplerAnisotropic.Get());
+	m_BillboardEffect.SetTextureArray(m_ImmediateContext.Get(), m_TreeTexArraySRV.Get());
+
+	m_BillboardEffect.Apply(m_ImmediateContext.Get());
+
+	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+	m_ImmediateContext->IASetVertexBuffers(0, 1, m_TreePointsVB.GetAddressOf(), &treeStride, &offset);
+
+	m_ImmediateContext->Draw(4, 0);
+
+	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
 	//======================================== planar shadows ==============================================================//
+	
 	static Drawable* drawableShadows[] = { m_DrawableTorus.get(),  m_DrawableTeapot.get(), m_DrawableSphere.get() };
 
 	m_SimpleEffect.Bind(m_ImmediateContext.Get());
@@ -517,7 +559,6 @@ void DemoScene::DrawScene()
 
 	XMVECTOR shadowPlane = XMPlaneFromPointNormal(XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 	XMMATRIX shadowMatrix = XMMatrixShadow(shadowPlane, -XMLoadFloat3(&m_DirLight.Direction));
-	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
 
 	for (auto const& it : drawableShadows)
 	{
@@ -597,7 +638,7 @@ void DemoScene::RenderReflections()
 	m_BasicEffect.SetDirectionalLight(Helpers::GetReflectedLight(m_DirLight, reflectionMatrix));
 	m_BasicEffect.SetPointLight(Helpers::GetReflectedLight(m_PointLight, reflectionMatrix));
 	m_BasicEffect.SetSpotLight(Helpers::GetReflectedLight(m_SpotLight, reflectionMatrix));
-	m_BasicEffect.ApplyEffect(m_ImmediateContext.Get());
+	m_BasicEffect.ApplyPerFrameConstants(m_ImmediateContext.Get());
 
 	//Draw reflection only through the mirror i.e where stencil value = 1
 	m_ImmediateContext->OMSetDepthStencilState(m_DSSDrawMarkedOnly.Get(), 1);
@@ -629,7 +670,7 @@ void DemoScene::RenderReflections()
 	m_BasicEffect.SetDirectionalLight(m_DirLight);
 	m_BasicEffect.SetPointLight(m_PointLight);
 	m_BasicEffect.SetSpotLight(m_SpotLight);
-	m_BasicEffect.ApplyEffect(m_ImmediateContext.Get());
+	m_BasicEffect.ApplyPerFrameConstants(m_ImmediateContext.Get());
 }
 
 void DemoScene::FillBasicEffect(Drawable* const drawable)

@@ -86,7 +86,7 @@ void BasicEffect::Apply(ID3D11DeviceContext* context)
 	m_CbPerObject.SetData(context, m_CbPerObjectData);
 }
 
-void BasicEffect::ApplyEffect(ID3D11DeviceContext* context)
+void BasicEffect::ApplyPerFrameConstants(ID3D11DeviceContext* context)
 {
 	m_CbPerFrame.SetData(context, m_CbPerFrameData);
 }

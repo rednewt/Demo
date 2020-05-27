@@ -150,6 +150,9 @@
     <ClCompile Include="Src\SimpleEffect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Src\BillboardEffect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Src\Shaders\Basic\PixelShader.hlsl">
