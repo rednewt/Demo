@@ -1,6 +1,6 @@
 #include "Common.hlsli"
 
-//register b0 is already used by cbPerObject from Common.fx
+//register b0 is already used by cbPerObject from Common.hlsli
 
 cbuffer cbPerFrame : register(b1)
 {
@@ -8,7 +8,7 @@ cbuffer cbPerFrame : register(b1)
     PointLight gPointLight;
     SpotLight gSpotLight;
     
-    float3 gEyePos; //In world space
+    float3 gEyePos; 
     float pad;
    
     FogProperties gFog;

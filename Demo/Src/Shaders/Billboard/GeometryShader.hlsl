@@ -34,7 +34,7 @@ void main(
     forwardVec.y = 0.0f;
     forwardVec = normalize(forwardVec);
     
-    float3 rightVec = cross(upVec, forwardVec);
+    float3 rightVec = normalize(cross(upVec, forwardVec));
     
     float halfWidth = 0.5f * input[0].Size.x;
     float halfHeight = 0.5f * input[0].Size.y;

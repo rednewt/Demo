@@ -116,6 +116,12 @@ bool DemoScene::CreateDeviceDependentResources()
 
 		if FAILED(m_Device->CreateBlendState(&desc, m_BSNoColorWrite.ReleaseAndGetAddressOf()))
 			return false;
+
+		desc = CD3D11_BLEND_DESC(d3dDefault);
+		desc.AlphaToCoverageEnable = TRUE;
+
+		if FAILED(m_Device->CreateBlendState(&desc, m_BSAlphaToCoverage.ReleaseAndGetAddressOf()))
+			return false;
 	}
 	{
 		CD3D11_RASTERIZER_DESC desc(d3dDefault);
@@ -543,6 +549,7 @@ void DemoScene::DrawScene()
 
 	m_BillboardEffect.Apply(m_ImmediateContext.Get());
 
+	m_ImmediateContext->OMSetBlendState(m_BSAlphaToCoverage.Get(), NULL, 0xffffffff);
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 	m_ImmediateContext->IASetVertexBuffers(0, 1, m_TreePointsVB.GetAddressOf(), &treeStride, &offset);
 

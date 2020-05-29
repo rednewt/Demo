@@ -26,6 +26,7 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSTransparent;
 	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSNoColorWrite;
+	Microsoft::WRL::ComPtr<ID3D11BlendState> m_BSAlphaToCoverage;
 
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSCullNone;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_RSWireframe;
