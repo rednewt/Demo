@@ -70,7 +70,7 @@ bool DemoScene::CreateDeviceDependentResources()
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\WireFence.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 
-	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\checkboard.dds", 0, m_DrawableGrid->TextureSRV.ReleaseAndGetAddressOf()))
+	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\mipmaps.dds", 0, m_DrawableGrid->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\ice.dds", 0, m_DrawableMirror->TextureSRV.ReleaseAndGetAddressOf()))
@@ -211,7 +211,9 @@ void DemoScene::CreateBuffers()
 		TreePointSprite(XMFLOAT3(-5.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)),
 		TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)),
 		TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 15.0f), XMFLOAT2(5.0f, 10.0f)),
-		TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 20.0f), XMFLOAT2(5.0f, 10.0f))
+		TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 20.0f), XMFLOAT2(5.0f, 10.0f)),
+		TreePointSprite(XMFLOAT3(-20.0f, 5.0f, 20.0f), XMFLOAT2(5.0f, 10.0f)),
+		TreePointSprite(XMFLOAT3(-30.0f, 5.0f, 20.0f), XMFLOAT2(5.0f, 10.0f))
 	};
 	
 	Helpers::CreateBuffer(m_Device.Get(), points, sizeof(points) / sizeof(points[0]), D3D11_BIND_VERTEX_BUFFER, m_TreePointsVB.ReleaseAndGetAddressOf());
@@ -240,7 +242,7 @@ void DemoScene::UpdateScene(float dt)
 	static XMVECTOR focus = XMVectorSet(0, 0, 0, 1);
 
 	//build projection matrix
-	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 1.0f, 100.0f);
+	XMMATRIX proj = XMMatrixPerspectiveFovLH(XMConvertToRadians(60.0f), static_cast<float>(m_ClientWidth) / m_ClientHeight, 1.0f, 1000.0f);
 	XMStoreFloat4x4(&m_CameraProjection, proj);
 
 	//build view matrix
@@ -549,11 +551,16 @@ void DemoScene::DrawScene()
 
 	m_BillboardEffect.Apply(m_ImmediateContext.Get());
 
-	m_ImmediateContext->OMSetBlendState(m_BSAlphaToCoverage.Get(), NULL, 0xffffffff);
+	static bool temp = true;
+	ImGui::Checkbox("Alpha To Coverage", &temp);
+
+	if (temp) m_ImmediateContext->OMSetBlendState(m_BSAlphaToCoverage.Get(), NULL, 0xffffffff);
+	 else m_ImmediateContext->OMSetBlendState(nullptr, NULL, 0xffffffff);
+	
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 	m_ImmediateContext->IASetVertexBuffers(0, 1, m_TreePointsVB.GetAddressOf(), &treeStride, &offset);
 
-	m_ImmediateContext->Draw(4, 0);
+	m_ImmediateContext->Draw(6, 0);
 
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 

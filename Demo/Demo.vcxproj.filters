@@ -35,9 +35,6 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="cpp.hint" />
-    <None Include="Src\Shaders\Lighting.fx">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="Src\Shaders\Basic\Common.hlsli">
       <Filter>Shaders\Basic</Filter>
     </None>
@@ -46,6 +43,9 @@
     </None>
     <None Include="Src\Shaders\Billboard\Common.hlsli">
       <Filter>Shaders\Billboard</Filter>
+    </None>
+    <None Include="Src\Shaders\Lighting.hlsli">
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

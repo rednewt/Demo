@@ -1,4 +1,4 @@
-#include "..\Lighting.fx"
+#include "..\Lighting.hlsli"
 
 struct VertexOut
 {
