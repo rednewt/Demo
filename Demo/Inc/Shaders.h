@@ -5,7 +5,7 @@
 #include "Helpers.h"
 #include "ConstantBuffer.h"
 
-class Shader
+class PipelineShaderObjects
 {
 private:
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> m_VertexShader;
@@ -13,9 +13,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11PixelShader> m_PixelShader;
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> m_InputLayout;
 public:
-	Shader() = default;
-	Shader(Shader const&) = delete;
-	Shader& operator=(Shader const&) = delete;
+	PipelineShaderObjects() = default;
+	PipelineShaderObjects(PipelineShaderObjects const&) = delete;
+	PipelineShaderObjects& operator=(PipelineShaderObjects const&) = delete;
 
 public:
 	void Create(ID3D11Device* device, const	Microsoft::WRL::ComPtr<ID3D11InputLayout>& inputLayout,
@@ -23,7 +23,7 @@ public:
 		const void* pPixelShaderByteCode, SIZE_T pixelShaderByteLength) 
 	{
 		assert(device != nullptr);
-
+		
 		m_InputLayout = inputLayout;
 		DX::ThrowIfFailed(device->CreateVertexShader(pVertexShaderByteCode, vertexShaderByteLength, nullptr, m_VertexShader.ReleaseAndGetAddressOf()));
 		DX::ThrowIfFailed(device->CreatePixelShader(pPixelShaderByteCode, pixelShaderByteLength, nullptr, m_PixelShader.ReleaseAndGetAddressOf()));
@@ -51,7 +51,7 @@ public:
 	}
 };
 
-class SimpleEffect : Shader
+class SimpleEffect : PipelineShaderObjects
 {
 private:
 	struct VS_PS_CbConstants
@@ -83,7 +83,7 @@ public:
 	void Bind(ID3D11DeviceContext* context) const;
 };
 
-class BasicEffect : Shader
+class BasicEffect : PipelineShaderObjects
 {
 private:
 	struct VS_PS_CbPerObject
@@ -146,7 +146,7 @@ public:
 };
 
 
-class BillboardEffect : Shader
+class BillboardEffect : PipelineShaderObjects
 {
 private:
 	struct GS_CbPerFrame

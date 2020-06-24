@@ -17,6 +17,7 @@ namespace
 {
 	#include "Shaders\Compiled\BasicVS.h"
 	#include "Shaders\Compiled\BillboardVS.h"
+	#include "Shaders\Compiled\SimpleComputeCS.h"
 }
 
 using namespace DirectX;
@@ -51,23 +52,48 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableGrid->Material.Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
+void DemoScene::CreateComputeShaderResources()
+{
+	DX::ThrowIfFailed(m_Device->CreateComputeShader(g_SimpleCompute, sizeof(g_SimpleCompute), nullptr, m_SimpleComputeShader.ReleaseAndGetAddressOf()));
+
+	CD3D11_TEXTURE2D_DESC outputTex = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R32G32B32A32_FLOAT,
+		512,
+		512,
+		1,
+		1,
+		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
+
+	ID3D11Texture2D* tex;
+	DX::ThrowIfFailed(m_Device->CreateTexture2D(&outputTex, nullptr, &tex));
+
+	CD3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(tex,
+		D3D11_SRV_DIMENSION_TEXTURE2D);
+
+	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(tex, &srvDesc, m_ComputeOutputSRV.ReleaseAndGetAddressOf()));
+
+	CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(tex,
+		D3D11_UAV_DIMENSION_TEXTURE2D);
+
+	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(tex, &uavDesc, m_ComputeOutputUAV.ReleaseAndGetAddressOf()));
+
+	tex->Release();
+}
+
 bool DemoScene::CreateDeviceDependentResources()
 {
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> layoutPosNormalTex;
-	DX::ThrowIfFailed(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount,
-		g_BasicVS, sizeof(g_BasicVS), layoutPosNormalTex.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(m_Device->CreateInputLayout(GeometricPrimitive::VertexType::InputElements, GeometricPrimitive::VertexType::InputElementCount, g_BasicVS, sizeof(g_BasicVS), layoutPosNormalTex.ReleaseAndGetAddressOf()));
 
 	m_BasicEffect.Create(m_Device.Get(), layoutPosNormalTex);
 	m_SimpleEffect.Create(m_Device.Get(), layoutPosNormalTex);
 
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> layoutPointSize;
-	DX::ThrowIfFailed(m_Device->CreateInputLayout(TreePointSprite::InputElements, TreePointSprite::ElementCount,
-		g_BillboardVS, sizeof(g_BillboardVS), layoutPointSize.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(m_Device->CreateInputLayout(TreePointSprite::InputElements, TreePointSprite::ElementCount, g_BillboardVS, sizeof(g_BillboardVS), layoutPointSize.ReleaseAndGetAddressOf()));
 
 	m_BillboardEffect.Create(m_Device.Get(), layoutPointSize);
 	
 #pragma region Load Textures
-	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\WireFence.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
+	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\crate.dds", 0, m_DrawableBox->TextureSRV.ReleaseAndGetAddressOf()))
 		return false;
 
 	if FAILED(CreateDDSTextureFromFile(m_Device.Get(), m_ImmediateContext.Get(), L"Textures\\mipmaps.dds", 0, m_DrawableGrid->TextureSRV.ReleaseAndGetAddressOf()))
@@ -89,6 +115,7 @@ bool DemoScene::CreateDeviceDependentResources()
 		return false;
 #pragma endregion
 
+#pragma region States Creation
 	CD3D11_DEFAULT d3dDefault;
 	{
 		CD3D11_SAMPLER_DESC desc(d3dDefault);
@@ -176,8 +203,10 @@ bool DemoScene::CreateDeviceDependentResources()
 		if FAILED(m_Device->CreateDepthStencilState(&desc, m_DSSNoDoubleBlend.ReleaseAndGetAddressOf()))
 			return false;
 	}
+#pragma endregion
 
 	CreateBuffers();
+	CreateComputeShaderResources();
 
 	return true;
 }
@@ -206,7 +235,7 @@ void DemoScene::CreateBuffers()
 	m_DrawableGrid->Create(m_Device.Get(), vertices, indices);
 
 
-	TreePointSprite points[] =
+	std::array<TreePointSprite, 6> points = 
 	{
 		TreePointSprite(XMFLOAT3(-5.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)),
 		TreePointSprite(XMFLOAT3(-10.0f, 5.0f, 10.0f), XMFLOAT2(5.0f, 10.0f)),
@@ -215,8 +244,8 @@ void DemoScene::CreateBuffers()
 		TreePointSprite(XMFLOAT3(-20.0f, 5.0f, 20.0f), XMFLOAT2(5.0f, 10.0f)),
 		TreePointSprite(XMFLOAT3(-30.0f, 5.0f, 20.0f), XMFLOAT2(5.0f, 10.0f))
 	};
-	
-	Helpers::CreateBuffer(m_Device.Get(), points, sizeof(points) / sizeof(points[0]), D3D11_BIND_VERTEX_BUFFER, m_TreePointsVB.ReleaseAndGetAddressOf());
+
+	Helpers::CreateMeshBuffer(m_Device.Get(), points.data(), points.size(), D3D11_BIND_VERTEX_BUFFER, m_TreePointsVB.ReleaseAndGetAddressOf());
 }
 
 bool DemoScene::Initialize()
@@ -494,9 +523,41 @@ void DemoScene::UpdateScene(float dt)
 			ImGui::TreePop();
 		}
 	}
+
+	ImGui::Text("deltaTime: %f", dt);
+
 	ImGui::End();
 
 #pragma endregion
+}
+
+void DemoScene::TestComputeShader()
+{
+	if (!ImGui::Begin("Compute Shader"))
+	{
+		ImGui::End();
+		return;
+	}
+
+	//if (ImGui::Button("Start"))
+	//{
+		m_ImmediateContext->CSSetShader(m_SimpleComputeShader.Get(), nullptr, 0);
+
+		ID3D11ShaderResourceView* srvs[] = { m_DrawableBox->TextureSRV.Get(), m_DrawableMirror->TextureSRV.Get() };
+		ID3D11UnorderedAccessView* uavs[] = { m_ComputeOutputUAV.Get() };
+
+		m_ImmediateContext->CSSetShaderResources(0, 2, srvs);
+		m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavs, 0);
+
+		m_ImmediateContext->Dispatch(16, 16, 1);
+
+		ID3D11UnorderedAccessView* uavsNull[] = { nullptr };
+		m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavsNull, 0);
+
+		ImGui::Image(m_ComputeOutputSRV.Get(), ImVec2(512.0f, 512.0f));
+
+	//}
+	ImGui::End();
 }
 
 
@@ -522,6 +583,7 @@ void DemoScene::PrepareForRendering()
 
 void DemoScene::DrawScene()
 {
+	TestComputeShader();
 	Clear();
 	PrepareForRendering();
 
@@ -551,12 +613,7 @@ void DemoScene::DrawScene()
 
 	m_BillboardEffect.Apply(m_ImmediateContext.Get());
 
-	static bool temp = true;
-	ImGui::Checkbox("Alpha To Coverage", &temp);
-
-	if (temp) m_ImmediateContext->OMSetBlendState(m_BSAlphaToCoverage.Get(), NULL, 0xffffffff);
-	 else m_ImmediateContext->OMSetBlendState(nullptr, NULL, 0xffffffff);
-	
+	m_ImmediateContext->OMSetBlendState(m_BSAlphaToCoverage.Get(), NULL, 0xffffffff);
 	m_ImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 	m_ImmediateContext->IASetVertexBuffers(0, 1, m_TreePointsVB.GetAddressOf(), &treeStride, &offset);
 

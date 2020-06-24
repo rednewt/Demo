@@ -11,7 +11,7 @@ using namespace DirectX;
 
 void BasicEffect::Create(ID3D11Device* device, const Microsoft::WRL::ComPtr<ID3D11InputLayout>& inputLayout)
 {
-	Shader::Create(device, inputLayout, g_BasicVS, sizeof(g_BasicVS), g_BasicPS, sizeof(g_BasicPS));
+	PipelineShaderObjects::Create(device, inputLayout, g_BasicVS, sizeof(g_BasicVS), g_BasicPS, sizeof(g_BasicPS));
 	m_CbPerFrame.Create(device);
 	m_CbPerObject.Create(device);
 }
@@ -74,7 +74,7 @@ void BasicEffect::SetTexture(ID3D11DeviceContext* context, ID3D11ShaderResourceV
 
 void BasicEffect::Bind(ID3D11DeviceContext* context) const
 {
-	Shader::Bind(context);
+	PipelineShaderObjects::Bind(context);
 
 	context->VSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());
 	context->PSSetConstantBuffers(0, 1, m_CbPerObject.GetAddressOf());

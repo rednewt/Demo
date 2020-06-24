@@ -47,6 +47,11 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_TreePointsVB;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_TreeTexArraySRV;
+
+
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> m_SimpleComputeShader;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_ComputeOutputSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_ComputeOutputUAV;
 public:
 	explicit DemoScene(const HWND& hwnd);
 	DemoScene(const DemoScene&) = delete;
@@ -65,4 +70,7 @@ private:
 	void RenderReflections();
 	void ResetStates();
 	void FillBasicEffect(Drawable* const drawable);
+	
+	void CreateComputeShaderResources();
+	void TestComputeShader();
 };

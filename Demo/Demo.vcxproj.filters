@@ -176,5 +176,8 @@
     <FxCompile Include="Src\Shaders\Billboard\GeometryShader.hlsl">
       <Filter>Shaders\Billboard</Filter>
     </FxCompile>
+    <FxCompile Include="Src\Shaders\SimpleCompute.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

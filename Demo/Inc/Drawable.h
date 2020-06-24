@@ -27,8 +27,8 @@ struct Drawable
 		else
 			static_assert(sizeof(IndexType) == 2, "Unknown index buffer format");
 
-		Helpers::CreateBuffer(device, vertices, D3D11_BIND_VERTEX_BUFFER, VertexBuffer.ReleaseAndGetAddressOf());
-		Helpers::CreateBuffer(device, indices, D3D11_BIND_INDEX_BUFFER, IndexBuffer.ReleaseAndGetAddressOf());
+		Helpers::CreateMeshBuffer(device, vertices, D3D11_BIND_VERTEX_BUFFER, VertexBuffer.ReleaseAndGetAddressOf());
+		Helpers::CreateMeshBuffer(device, indices, D3D11_BIND_INDEX_BUFFER, IndexBuffer.ReleaseAndGetAddressOf());
 	}
 
 	DirectX::XMMATRIX GetWorld() const { return XMLoadFloat4x4(&WorldTransform); }

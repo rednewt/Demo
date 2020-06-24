@@ -46,7 +46,7 @@ namespace Helpers
 	}
 
 	template<typename T>
-	inline void CreateBuffer(ID3D11Device* device, std::vector<T> data, D3D11_BIND_FLAG bindFlag, ID3D11Buffer** outppBuffer)
+	inline void CreateMeshBuffer(ID3D11Device* device, std::vector<T> data, D3D11_BIND_FLAG bindFlag, ID3D11Buffer** outppBuffer)
 	{
 		D3D11_BUFFER_DESC desc = {};
 		desc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -55,12 +55,12 @@ namespace Helpers
 		
 		D3D11_SUBRESOURCE_DATA initData = {};
 		initData.pSysMem = data.data();
-
+		
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, &initData, outppBuffer));
 	}
 
 	template<typename T>
-	inline void CreateBuffer(ID3D11Device* device, T* data, UINT dataSize, D3D11_BIND_FLAG bindFlag, ID3D11Buffer** outppBuffer)
+	inline void CreateMeshBuffer(ID3D11Device* device, T* data, UINT dataSize, D3D11_BIND_FLAG bindFlag, ID3D11Buffer** outppBuffer)
 	{
 		D3D11_BUFFER_DESC desc = {};
 		desc.Usage = D3D11_USAGE_IMMUTABLE;

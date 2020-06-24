@@ -12,7 +12,7 @@ using namespace DirectX;
 
 void BillboardEffect::Create(ID3D11Device* device, const Microsoft::WRL::ComPtr<ID3D11InputLayout>& inputLayout)
 {
-	Shader::Create(device, inputLayout, 
+	PipelineShaderObjects::Create(device, inputLayout, 
 		g_BillboardVS, sizeof(g_BillboardVS),
 		g_BillboardPS, sizeof(g_BillboardPS),
 		g_BillboardGS, sizeof(g_BillboardGS));
@@ -53,7 +53,7 @@ void BillboardEffect::SetTextureArray(ID3D11DeviceContext* context, ID3D11Shader
 
 void BillboardEffect::Bind(ID3D11DeviceContext* context) const
 {
-	Shader::Bind(context);
+	PipelineShaderObjects::Bind(context);
 
 	ID3D11Buffer* buffers[] = { m_CbPerFrame.Get(), m_CbPerObject.Get() };
 	context->GSSetConstantBuffers(0, 2, buffers);

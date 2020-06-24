@@ -11,7 +11,7 @@ using namespace DirectX;
 
 void SimpleEffect::Create(ID3D11Device* device, const Microsoft::WRL::ComPtr<ID3D11InputLayout>& inputLayout)
 {
-	Shader::Create(device, inputLayout, g_SimpleVS, sizeof(g_SimpleVS), g_SimplePS, sizeof(g_SimplePS));
+	PipelineShaderObjects::Create(device, inputLayout, g_SimpleVS, sizeof(g_SimpleVS), g_SimplePS, sizeof(g_SimplePS));
 	m_CbConstants.Create(device);
 }
 
@@ -32,7 +32,7 @@ void SimpleEffect::Apply(ID3D11DeviceContext* context)
 
 void SimpleEffect::Bind(ID3D11DeviceContext* context) const
 {
-	Shader::Bind(context);
+	PipelineShaderObjects::Bind(context);
 	context->VSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
 	context->PSSetConstantBuffers(0, 1, m_CbConstants.GetAddressOf());
 }
