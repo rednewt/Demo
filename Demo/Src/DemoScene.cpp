@@ -52,33 +52,6 @@ DemoScene::DemoScene(const HWND& hwnd) :
 	m_DrawableGrid->Material.Ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
-void DemoScene::CreateComputeShaderResources()
-{
-	DX::ThrowIfFailed(m_Device->CreateComputeShader(g_SimpleCompute, sizeof(g_SimpleCompute), nullptr, m_SimpleComputeShader.ReleaseAndGetAddressOf()));
-
-	CD3D11_TEXTURE2D_DESC outputTex = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R32G32B32A32_FLOAT,
-		512,
-		512,
-		1,
-		1,
-		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
-
-	ID3D11Texture2D* tex;
-	DX::ThrowIfFailed(m_Device->CreateTexture2D(&outputTex, nullptr, &tex));
-
-	CD3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(tex,
-		D3D11_SRV_DIMENSION_TEXTURE2D);
-
-	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(tex, &srvDesc, m_ComputeOutputSRV.ReleaseAndGetAddressOf()));
-
-	CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(tex,
-		D3D11_UAV_DIMENSION_TEXTURE2D);
-
-	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(tex, &uavDesc, m_ComputeOutputUAV.ReleaseAndGetAddressOf()));
-
-	tex->Release();
-}
-
 bool DemoScene::CreateDeviceDependentResources()
 {
 	Microsoft::WRL::ComPtr<ID3D11InputLayout> layoutPosNormalTex;
@@ -209,6 +182,33 @@ bool DemoScene::CreateDeviceDependentResources()
 	CreateComputeShaderResources();
 
 	return true;
+}
+
+void DemoScene::CreateComputeShaderResources()
+{
+	DX::ThrowIfFailed(m_Device->CreateComputeShader(g_SimpleCompute, sizeof(g_SimpleCompute), nullptr, m_SimpleComputeShader.ReleaseAndGetAddressOf()));
+
+	CD3D11_TEXTURE2D_DESC outputTex = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R16G16B16A16_FLOAT,
+		512,
+		512,
+		1,
+		1,
+		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
+
+	ID3D11Texture2D* tex;
+	DX::ThrowIfFailed(m_Device->CreateTexture2D(&outputTex, nullptr, &tex));
+
+	CD3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(tex,
+		D3D11_SRV_DIMENSION_TEXTURE2D);
+
+	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(tex, &srvDesc, m_ComputeOutputSRV.ReleaseAndGetAddressOf()));
+
+	CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(tex,
+		D3D11_UAV_DIMENSION_TEXTURE2D);
+
+	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(tex, &uavDesc, m_ComputeOutputUAV.ReleaseAndGetAddressOf()));
+
+	tex->Release();
 }
 
 void DemoScene::CreateBuffers()
@@ -539,24 +539,22 @@ void DemoScene::TestComputeShader()
 		return;
 	}
 
-	//if (ImGui::Button("Start"))
-	//{
-		m_ImmediateContext->CSSetShader(m_SimpleComputeShader.Get(), nullptr, 0);
+	m_ImmediateContext->CSSetShader(m_SimpleComputeShader.Get(), nullptr, 0);
 
-		ID3D11ShaderResourceView* srvs[] = { m_DrawableBox->TextureSRV.Get(), m_DrawableMirror->TextureSRV.Get() };
-		ID3D11UnorderedAccessView* uavs[] = { m_ComputeOutputUAV.Get() };
+	ID3D11ShaderResourceView* srvs[] = { m_DrawableBox->TextureSRV.Get(), m_DrawableMirror->TextureSRV.Get() };
+	ID3D11UnorderedAccessView* uavs[] = { m_ComputeOutputUAV.Get() };
 
-		m_ImmediateContext->CSSetShaderResources(0, 2, srvs);
-		m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavs, 0);
+	m_ImmediateContext->CSSetShaderResources(0, 2, srvs);
+	m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavs, 0);
 
-		m_ImmediateContext->Dispatch(16, 16, 1);
+	m_ImmediateContext->Dispatch(16, 16, 1);
 
-		ID3D11UnorderedAccessView* uavsNull[] = { nullptr };
-		m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavsNull, 0);
+	ID3D11UnorderedAccessView* uavsNull[] = { nullptr };
+	m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavsNull, 0);
 
-		ImGui::Image(m_ComputeOutputSRV.Get(), ImVec2(512.0f, 512.0f));
+	ImGui::Image(m_ComputeOutputSRV.Get(), ImVec2(512.0f, 512.0f));
 
-	//}
+
 	ImGui::End();
 }
 

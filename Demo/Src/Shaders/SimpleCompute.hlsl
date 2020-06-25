@@ -1,13 +1,20 @@
 
-
+struct Data
+{
+    float4 v1;
+    float3 v2;
+};
 //512 x 512
-Texture2D gInputA : register(t0);
-Texture2D gInputB : register(t1);
 
-RWTexture2D<float4> gOutput : register(u0);
+StructuredBuffer<Data> gInputA;
+StructuredBuffer<Data> gInputB;
 
-[numthreads(32, 32, 1)]
+RWStructuredBuffer<Data> gOutput;
+
+[numthreads(256, 1, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
-    gOutput[DTid.xy] = gInputA[DTid.xy] * gInputB[DTid.xy];
+    gOutput[DTid.x].v1 = gInputA[DTid.x].v1 * gInputB[DTid.x].v1;
+    gOutput[DTid.x].v2 = gInputA[DTid.x].v2 * gInputB[DTid.x].v2;
+    
 }
