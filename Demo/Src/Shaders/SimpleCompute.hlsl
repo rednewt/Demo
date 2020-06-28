@@ -6,10 +6,10 @@ struct Data
 };
 //512 x 512
 
-StructuredBuffer<Data> gInputA;
-StructuredBuffer<Data> gInputB;
+StructuredBuffer<Data> gInputA : register(t0);
+StructuredBuffer<Data> gInputB : register(t1);
 
-RWStructuredBuffer<Data> gOutput;
+RWStructuredBuffer<Data> gOutput : register(u0);
 
 [numthreads(256, 1, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
