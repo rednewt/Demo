@@ -46,14 +46,16 @@ namespace Helpers
 	}
 
 	template<typename T>
-	inline void CreateStructuredBuffer(ID3D11Device* device, std::vector<T> data, D3D11_BIND_FLAG bindFlag, ID3D11Buffer** outppBuffer)
+	inline void CreateStructuredBuffer(ID3D11Device* device, std::vector<T> data, UINT bindFlag, ID3D11Buffer** outppBuffer,
+		UINT cpuFlags = 0, D3D11_USAGE usage = D3D11_USAGE_DEFAULT)
 	{
 		D3D11_BUFFER_DESC desc = {};
-		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.Usage = usage;
 		desc.ByteWidth = static_cast<UINT>(sizeof(T) * data.size());
 		desc.BindFlags = bindFlag;
 		desc.StructureByteStride = sizeof(T);
 		desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		desc.CPUAccessFlags = cpuFlags;
 
 		D3D11_SUBRESOURCE_DATA initData = {};
 		initData.pSysMem = data.data();
@@ -62,14 +64,16 @@ namespace Helpers
 	}
 
 	template<typename T>
-	inline void CreateStructuredBuffer(ID3D11Device* device, UINT numElements, D3D11_BIND_FLAG bindFlag, ID3D11Buffer** outppBuffer)
+	inline void CreateStructuredBuffer(ID3D11Device* device, UINT numElements, UINT bindFlag, ID3D11Buffer** outppBuffer,
+		UINT cpuFlags = 0, D3D11_USAGE usage = D3D11_USAGE_DEFAULT)
 	{
 		D3D11_BUFFER_DESC desc = {};
-		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.Usage = usage;
 		desc.ByteWidth = static_cast<UINT>(sizeof(T) * numElements);
 		desc.BindFlags = bindFlag;
 		desc.StructureByteStride = sizeof(T);
 		desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		desc.CPUAccessFlags = cpuFlags;
 
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, nullptr, outppBuffer));
 	}

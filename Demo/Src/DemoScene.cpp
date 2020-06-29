@@ -188,28 +188,6 @@ void DemoScene::CreateComputeShaderResources()
 {
 	DX::ThrowIfFailed(m_Device->CreateComputeShader(g_SimpleCompute, sizeof(g_SimpleCompute), nullptr, m_SimpleComputeShader.ReleaseAndGetAddressOf()));
 
-	/*CD3D11_TEXTURE2D_DESC outputTex = CD3D11_TEXTURE2D_DESC(DXGI_FORMAT_R16G16B16A16_FLOAT,
-		512,
-		512,
-		1,
-		1,
-		D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS);
-
-	ID3D11Texture2D* tex;
-	DX::ThrowIfFailed(m_Device->CreateTexture2D(&outputTex, nullptr, &tex));
-
-	CD3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(tex,
-		D3D11_SRV_DIMENSION_TEXTURE2D);
-
-	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(tex, &srvDesc, m_ComputeOutputSRV.ReleaseAndGetAddressOf()));
-
-	CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(tex,
-		D3D11_UAV_DIMENSION_TEXTURE2D);
-
-	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(tex, &uavDesc, m_ComputeOutputUAV.ReleaseAndGetAddressOf()));
-
-	tex->Release();*/
-
 	ID3D11Buffer* inputA;
 	ID3D11Buffer* inputB;
 
@@ -221,41 +199,28 @@ void DemoScene::CreateComputeShaderResources()
 
 	for (int i = 0; i < 256; ++i)
 	{
-		a[i].v1 = XMFLOAT4(1, 1, 1, 1);
-		a[i].v2 = XMFLOAT3(2, 2, 2);
+		a[i].v1 = XMFLOAT4(i, i, i, i);
+		a[i].v2 = XMFLOAT3(2*i, 2*i, 2*i);
 
-		b[i].v1 = XMFLOAT4(3, 3, 3, 3);
-		b[i].v2 = XMFLOAT3(2, 2, 2);
+		b[i].v1 = XMFLOAT4(1, 1, 1, 1);
+		b[i].v2 = XMFLOAT3(1, 1, 1);
 	}
 
 	Helpers::CreateStructuredBuffer(m_Device.Get(), a, D3D11_BIND_SHADER_RESOURCE, &inputA);
 	Helpers::CreateStructuredBuffer(m_Device.Get(), b, D3D11_BIND_SHADER_RESOURCE, &inputB);
-	Helpers::CreateStructuredBuffer(m_Device.Get(), b, D3D11_BIND_UNORDERED_ACCESS, &outputBuffer);
+	Helpers::CreateStructuredBuffer(m_Device.Get(), b, D3D11_BIND_UNORDERED_ACCESS, m_ComputeOutputBuffer.ReleaseAndGetAddressOf());
+	Helpers::CreateStructuredBuffer<ComputeData>(m_Device.Get(), 256, 0, m_ComputeOutputSystemMemory.ReleaseAndGetAddressOf(), D3D11_CPU_ACCESS_READ, D3D11_USAGE_STAGING);
 
 
-	CD3D11_SHADER_RESOURCE_VIEW_DESC desc = CD3D11_SHADER_RESOURCE_VIEW_DESC(inputA, DXGI_FORMAT_UNKNOWN, 0, 256);
+	CD3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(inputA, DXGI_FORMAT_UNKNOWN, 0, 256);
+	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(inputA, &srvDesc, m_InputA.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(inputB, &srvDesc, m_InputB.ReleaseAndGetAddressOf()));
 
-	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(inputA, &desc, m_InputA.ReleaseAndGetAddressOf()));
-	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(inputB, &desc, m_InputB.ReleaseAndGetAddressOf()));
-
-	CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(outputBuffer, DXGI_FORMAT_UNKNOWN, 0, 256);
-
-	m_Device->CreateUnorderedAccessView(outputBuffer, &uavDesc, m_ComputeOutputUAV.ReleaseAndGetAddressOf());
+	CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(m_ComputeOutputBuffer.Get(), DXGI_FORMAT_UNKNOWN, 0, 256);
+	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(m_ComputeOutputBuffer.Get(), &uavDesc, m_ComputeOutputUAV.ReleaseAndGetAddressOf()));
 
 	inputA->Release();
 	inputB->Release();
-	outputBuffer->Release();
-
-
-	D3D11_BUFFER_DESC outputDesc;
-	outputDesc.Usage = D3D11_USAGE_STAGING;
-	outputDesc.BindFlags = 0;
-	outputDesc.ByteWidth = sizeof(ComputeData) * 256;
-	outputDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-	outputDesc.StructureByteStride = sizeof(ComputeData);
-	outputDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-
-	DX::ThrowIfFailed(m_Device->CreateBuffer(&outputDesc, nullptr, m_ComputeOutputSystemMemory.ReleaseAndGetAddressOf()));
 }
 
 void DemoScene::CreateBuffers()
@@ -596,19 +561,23 @@ void DemoScene::TestComputeShader()
 
 	m_ImmediateContext->Dispatch(1, 1, 1);
 
-	ID3D11UnorderedAccessView* uavsNull[] = { nullptr };
-	m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavsNull, 0);
+	ID3D11UnorderedAccessView* uavNull[] = { nullptr };
+	m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavNull, 0);
 
-	m_ImmediateContext->CopyResource(m_ComputeOutputSystemMemory.Get(), outputBuffer);
+	m_ImmediateContext->CopyResource(m_ComputeOutputSystemMemory.Get(), m_ComputeOutputBuffer.Get());
 
-	D3D11_MAPPED_SUBRESOURCE mappedData;
-	m_ImmediateContext->Map(m_ComputeOutputSystemMemory.Get(), 0, D3D11_MAP_READ, 0, &mappedData);
-	ComputeData* dataView = reinterpret_cast<ComputeData*>(mappedData.pData);
-	for (int i = 0; i < 256; ++i)
+	D3D11_MAPPED_SUBRESOURCE mappedRes;
+	m_ImmediateContext->Map(m_ComputeOutputSystemMemory.Get(), 0, D3D11_MAP_READ, 0, &mappedRes);
+
+	ComputeData* data = reinterpret_cast<ComputeData*>(mappedRes.pData);
+	for (UINT i = 0; i < 256; ++i)
 	{
-		XMFLOAT3 x = dataView[i].v2;
-		XMFLOAT4 y = dataView[i].v1;
+		ImGui::Text("index: %d, v1: %.2f %.2f %.2f %.2f, v2: %.2f %.2f %.2f", 
+			i, 
+			data[i].v1.x, data[i].v1.y, data[i].v1.z, data[i].v1.w,
+			data[i].v2.x, data[i].v2.y, data[i].v2.z);
 	}
+
 	m_ImmediateContext->Unmap(m_ComputeOutputSystemMemory.Get(), 0);
 
 	ImGui::End();
