@@ -572,7 +572,9 @@ void DemoScene::TestComputeShader()
 	ComputeData* data = reinterpret_cast<ComputeData*>(mappedRes.pData);
 	for (UINT i = 0; i < 256; ++i)
 	{
-		ImGui::Text("index: %d, v1: %.2f %.2f %.2f %.2f, v2: %.2f %.2f %.2f", 
+		ImGui::Text("index: %d, \
+			v1: %.2f %.2f %.2f %.2f, \
+			v2: %.2f %.2f %.2f", 
 			i, 
 			data[i].v1.x, data[i].v1.y, data[i].v1.z, data[i].v1.w,
 			data[i].v2.x, data[i].v2.y, data[i].v2.z);
@@ -769,7 +771,7 @@ void DemoScene::RenderReflections()
 	m_BasicEffect.ApplyPerFrameConstants(m_ImmediateContext.Get());
 }
 
-void DemoScene::FillBasicEffect(Drawable* const drawable)
+void DemoScene::FillBasicEffect(Drawable* drawable)
 {
 	XMMATRIX viewProj = XMLoadFloat4x4(&m_CameraView) * XMLoadFloat4x4(&m_CameraProjection);
 

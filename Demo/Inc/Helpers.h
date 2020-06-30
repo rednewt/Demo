@@ -106,7 +106,6 @@ namespace Helpers
 		DX::ThrowIfFailed(device->CreateBuffer(&desc, &initData, outppBuffer));
 	}
 
-
 	inline DirectionalLight GetReflectedLight(const DirectionalLight& light, DirectX::FXMMATRIX reflectionMatrix)
 	{
 		DirectionalLight reflected = light;

@@ -16,7 +16,7 @@ struct Drawable
 	}
 
 	template<typename VertexType, typename IndexType>
-	void Create(ID3D11Device* const device, const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices)
+	void Create(ID3D11Device * device, const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices)
 	{
 		assert(device != nullptr);
 		IndexCount = static_cast<uint32_t>(indices.size());

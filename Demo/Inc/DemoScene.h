@@ -79,7 +79,7 @@ private:
 	void RenderToStencil();
 	void RenderReflections();
 	void ResetStates();
-	void FillBasicEffect(Drawable* const drawable);
+	void FillBasicEffect(Drawable* drawable);
 	
 	void CreateComputeShaderResources();
 	void TestComputeShader();
