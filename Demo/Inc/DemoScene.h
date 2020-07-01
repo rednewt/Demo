@@ -56,9 +56,8 @@ private:
 
 
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> m_SimpleComputeShader;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_InputA;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_InputB;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_ComputeOutputUAV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_InputUAV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_OutputUAV;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_ComputeOutputSystemMemory;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_ComputeOutputBuffer;
 

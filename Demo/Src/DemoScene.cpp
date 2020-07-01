@@ -188,39 +188,25 @@ void DemoScene::CreateComputeShaderResources()
 {
 	DX::ThrowIfFailed(m_Device->CreateComputeShader(g_SimpleCompute, sizeof(g_SimpleCompute), nullptr, m_SimpleComputeShader.ReleaseAndGetAddressOf()));
 
-	ID3D11Buffer* inputA;
-	ID3D11Buffer* inputB;
-
-	std::vector<ComputeData> a;
-	std::vector<ComputeData> b;
-
-	a.resize(256);
-	b.resize(256);
+	std::vector<ComputeData> a(256);
 
 	for (int i = 0; i < 256; ++i)
 	{
 		a[i].v1 = XMFLOAT4(i, i, i, i);
-		a[i].v2 = XMFLOAT3(2*i, 2*i, 2*i);
-
-		b[i].v1 = XMFLOAT4(1, 1, 1, 1);
-		b[i].v2 = XMFLOAT3(1, 1, 1);
+		a[i].v2 = XMFLOAT3(i + 1, i + 1, i + 1);
 	}
 
-	Helpers::CreateStructuredBuffer(m_Device.Get(), a, D3D11_BIND_SHADER_RESOURCE, &inputA);
-	Helpers::CreateStructuredBuffer(m_Device.Get(), b, D3D11_BIND_SHADER_RESOURCE, &inputB);
-	Helpers::CreateStructuredBuffer(m_Device.Get(), b, D3D11_BIND_UNORDERED_ACCESS, m_ComputeOutputBuffer.ReleaseAndGetAddressOf());
+	ID3D11Buffer* input;
+	Helpers::CreateStructuredBuffer(m_Device.Get(), a, D3D11_BIND_UNORDERED_ACCESS, &input);
+	Helpers::CreateStructuredBuffer<ComputeData>(m_Device.Get(), 256, D3D11_BIND_UNORDERED_ACCESS, m_ComputeOutputBuffer.ReleaseAndGetAddressOf());
+	
 	Helpers::CreateStructuredBuffer<ComputeData>(m_Device.Get(), 256, 0, m_ComputeOutputSystemMemory.ReleaseAndGetAddressOf(), D3D11_CPU_ACCESS_READ, D3D11_USAGE_STAGING);
 
+	CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(input, DXGI_FORMAT_UNKNOWN, 0, 256, D3D11_BUFFER_UAV_FLAG_APPEND);
+	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(input, &uavDesc, m_InputUAV.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(m_ComputeOutputBuffer.Get(), &uavDesc, m_OutputUAV.ReleaseAndGetAddressOf()));
 
-	CD3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(inputA, DXGI_FORMAT_UNKNOWN, 0, 256);
-	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(inputA, &srvDesc, m_InputA.ReleaseAndGetAddressOf()));
-	DX::ThrowIfFailed(m_Device->CreateShaderResourceView(inputB, &srvDesc, m_InputB.ReleaseAndGetAddressOf()));
-
-	CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(m_ComputeOutputBuffer.Get(), DXGI_FORMAT_UNKNOWN, 0, 256);
-	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(m_ComputeOutputBuffer.Get(), &uavDesc, m_ComputeOutputUAV.ReleaseAndGetAddressOf()));
-
-	inputA->Release();
-	inputB->Release();
+	input->Release();
 }
 
 void DemoScene::CreateBuffers()
@@ -553,11 +539,9 @@ void DemoScene::TestComputeShader()
 
 	m_ImmediateContext->CSSetShader(m_SimpleComputeShader.Get(), nullptr, 0);
 
-	ID3D11ShaderResourceView* srvs[] = { m_InputA.Get(), m_InputB.Get() };
-	ID3D11UnorderedAccessView* uavs[] = { m_ComputeOutputUAV.Get() };
 
-	m_ImmediateContext->CSSetShaderResources(0, 2, srvs);
-	m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavs, 0);
+	ID3D11UnorderedAccessView* uavs[] = { m_InputUAV.Get(), m_OutputUAV.Get() };
+	m_ImmediateContext->CSSetUnorderedAccessViews(0, 2, uavs, 0);
 
 	m_ImmediateContext->Dispatch(1, 1, 1);
 
