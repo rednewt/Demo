@@ -188,23 +188,23 @@ void DemoScene::CreateComputeShaderResources()
 {
 	DX::ThrowIfFailed(m_Device->CreateComputeShader(g_SimpleCompute, sizeof(g_SimpleCompute), nullptr, m_SimpleComputeShader.ReleaseAndGetAddressOf()));
 
-	std::vector<ComputeData> a(256);
+	std::vector<ComputeData> data(256);
 
 	for (int i = 0; i < 256; ++i)
 	{
-		a[i].v1 = XMFLOAT4(i, i, i, i);
-		a[i].v2 = XMFLOAT3(i + 1, i + 1, i + 1);
+		data[i].v1 = XMFLOAT4(i, i, i, i);
+		data[i].v2 = XMFLOAT3(i*2, i*2, i*2);
 	}
 
 	ID3D11Buffer* input;
-	Helpers::CreateStructuredBuffer(m_Device.Get(), a, D3D11_BIND_UNORDERED_ACCESS, &input);
-	Helpers::CreateStructuredBuffer<ComputeData>(m_Device.Get(), 256, D3D11_BIND_UNORDERED_ACCESS, m_ComputeOutputBuffer.ReleaseAndGetAddressOf());
-	
-	Helpers::CreateStructuredBuffer<ComputeData>(m_Device.Get(), 256, 0, m_ComputeOutputSystemMemory.ReleaseAndGetAddressOf(), D3D11_CPU_ACCESS_READ, D3D11_USAGE_STAGING);
+	Helpers::CreateStructuredBuffer(m_Device.Get(), data, D3D11_BIND_UNORDERED_ACCESS, &input);
+
+	Helpers::CreateStructuredBuffer<ComputeData>(m_Device.Get(), 256, D3D11_BIND_UNORDERED_ACCESS, m_OutputBuffer.ReleaseAndGetAddressOf());
+	Helpers::CreateStructuredBuffer<ComputeData>(m_Device.Get(), 256, 0, m_OutputSystemBuffer.ReleaseAndGetAddressOf(), D3D11_CPU_ACCESS_READ, D3D11_USAGE_STAGING);
 
 	CD3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = CD3D11_UNORDERED_ACCESS_VIEW_DESC(input, DXGI_FORMAT_UNKNOWN, 0, 256, D3D11_BUFFER_UAV_FLAG_APPEND);
 	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(input, &uavDesc, m_InputUAV.ReleaseAndGetAddressOf()));
-	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(m_ComputeOutputBuffer.Get(), &uavDesc, m_OutputUAV.ReleaseAndGetAddressOf()));
+	DX::ThrowIfFailed(m_Device->CreateUnorderedAccessView(m_OutputBuffer.Get(), &uavDesc, m_OutputUAV.ReleaseAndGetAddressOf()));
 
 	input->Release();
 }
@@ -282,8 +282,6 @@ void DemoScene::UpdateScene(float dt)
 	angle += 45.0f * dt;
 	
 	XMMATRIX rotateY = XMMatrixRotationY(XMConvertToRadians(angle));
-	XMMATRIX rotateX = XMMatrixRotationX(XMConvertToRadians(angle));
-	XMMATRIX rotateZ = XMMatrixRotationZ(XMConvertToRadians(angle));
 
 	m_DrawableBox->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(-2, 2, 0));
 	m_DrawableTeapot->WorldTransform = Helpers::XMMatrixToStorage(rotateY * XMMatrixTranslation(2, 2, 10));
@@ -541,17 +539,18 @@ void DemoScene::TestComputeShader()
 
 
 	ID3D11UnorderedAccessView* uavs[] = { m_InputUAV.Get(), m_OutputUAV.Get() };
-	m_ImmediateContext->CSSetUnorderedAccessViews(0, 2, uavs, 0);
+	UINT counts[] = { 256, 0 };
+	m_ImmediateContext->CSSetUnorderedAccessViews(0, 2, uavs, counts);
 
 	m_ImmediateContext->Dispatch(1, 1, 1);
 
 	ID3D11UnorderedAccessView* uavNull[] = { nullptr };
 	m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavNull, 0);
 
-	m_ImmediateContext->CopyResource(m_ComputeOutputSystemMemory.Get(), m_ComputeOutputBuffer.Get());
+	m_ImmediateContext->CopyResource(m_OutputSystemBuffer.Get(), m_OutputBuffer.Get());
 
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	m_ImmediateContext->Map(m_ComputeOutputSystemMemory.Get(), 0, D3D11_MAP_READ, 0, &mappedRes);
+	m_ImmediateContext->Map(m_OutputSystemBuffer.Get(), 0, D3D11_MAP_READ, 0, &mappedRes);
 
 	ComputeData* data = reinterpret_cast<ComputeData*>(mappedRes.pData);
 	for (UINT i = 0; i < 256; ++i)
@@ -564,7 +563,7 @@ void DemoScene::TestComputeShader()
 			data[i].v2.x, data[i].v2.y, data[i].v2.z);
 	}
 
-	m_ImmediateContext->Unmap(m_ComputeOutputSystemMemory.Get(), 0);
+	m_ImmediateContext->Unmap(m_OutputSystemBuffer.Get(), 0);
 
 	ImGui::End();
 }

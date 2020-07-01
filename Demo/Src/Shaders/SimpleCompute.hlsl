@@ -12,11 +12,6 @@ AppendStructuredBuffer<Data> gOutput : register(u1);
 [numthreads(256, 1, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
-    Data d = gInput.Consume();
-   
-    d.v1 *= 2;
-    d.v2 *= 2;
-    
-    gOutput.Append(d);
+    gOutput.Append(gInput.Consume());
 
 }

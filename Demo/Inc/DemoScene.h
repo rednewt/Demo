@@ -58,8 +58,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> m_SimpleComputeShader;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_InputUAV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_OutputUAV;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_ComputeOutputSystemMemory;
-	Microsoft::WRL::ComPtr<ID3D11Buffer> m_ComputeOutputBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_OutputBuffer;
+	Microsoft::WRL::ComPtr<ID3D11Buffer> m_OutputSystemBuffer;
 
 public:
 	explicit DemoScene(const HWND& hwnd);
