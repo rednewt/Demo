@@ -534,36 +534,43 @@ void DemoScene::TestComputeShader()
 		ImGui::End();
 		return;
 	}
-
-	m_ImmediateContext->CSSetShader(m_SimpleComputeShader.Get(), nullptr, 0);
-
-
-	ID3D11UnorderedAccessView* uavs[] = { m_InputUAV.Get(), m_OutputUAV.Get() };
-	UINT counts[] = { 256, 0 };
-	m_ImmediateContext->CSSetUnorderedAccessViews(0, 2, uavs, counts);
-
-	m_ImmediateContext->Dispatch(1, 1, 1);
-
-	ID3D11UnorderedAccessView* uavNull[] = { nullptr };
-	m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavNull, 0);
-
-	m_ImmediateContext->CopyResource(m_OutputSystemBuffer.Get(), m_OutputBuffer.Get());
-
-	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	m_ImmediateContext->Map(m_OutputSystemBuffer.Get(), 0, D3D11_MAP_READ, 0, &mappedRes);
-
-	ComputeData* data = reinterpret_cast<ComputeData*>(mappedRes.pData);
-	for (UINT i = 0; i < 256; ++i)
+	
+	static ComputeData* data = nullptr;
+	if (ImGui::Button("Dispatch"))
 	{
-		ImGui::Text("index: %d, \
-			v1: %.2f %.2f %.2f %.2f, \
-			v2: %.2f %.2f %.2f", 
-			i, 
-			data[i].v1.x, data[i].v1.y, data[i].v1.z, data[i].v1.w,
-			data[i].v2.x, data[i].v2.y, data[i].v2.z);
+
+		ID3D11UnorderedAccessView* uavs[] = { m_InputUAV.Get(), m_OutputUAV.Get() };
+		ID3D11UnorderedAccessView* uavNull[] = { nullptr };
+		UINT counts[] = { 256, 0 };
+
+		m_ImmediateContext->CSSetShader(m_SimpleComputeShader.Get(), nullptr, 0);
+		m_ImmediateContext->CSSetUnorderedAccessViews(0, 2, uavs, counts);
+
+		m_ImmediateContext->Dispatch(1, 1, 1);
+
+		m_ImmediateContext->CSSetUnorderedAccessViews(0, 1, uavNull, 0);
+		m_ImmediateContext->CopyResource(m_OutputSystemBuffer.Get(), m_OutputBuffer.Get());
+		m_ImmediateContext->CSSetShader(nullptr, nullptr, 0);
+
+		D3D11_MAPPED_SUBRESOURCE mappedRes;
+		m_ImmediateContext->Map(m_OutputSystemBuffer.Get(), 0, D3D11_MAP_READ, 0, &mappedRes);
+		data = reinterpret_cast<ComputeData*>(mappedRes.pData);
+		m_ImmediateContext->Unmap(m_OutputSystemBuffer.Get(), 0);
+
 	}
 
-	m_ImmediateContext->Unmap(m_OutputSystemBuffer.Get(), 0);
+	if (data != nullptr)
+	{
+		for (UINT i = 0; i < 256; ++i)
+		{
+			ImGui::Text("index: %d \
+			v1: %.2f %.2f %.2f %.2f \
+			v2: %.2f %.2f %.2f",
+				i,
+				data[i].v1.x, data[i].v1.y, data[i].v1.z, data[i].v1.w,
+				data[i].v2.x, data[i].v2.y, data[i].v2.z);
+		}
+	}
 
 	ImGui::End();
 }

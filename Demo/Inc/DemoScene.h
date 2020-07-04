@@ -55,6 +55,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_TreeTexArraySRV;
 
 
+	//Compute stuff
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> m_SimpleComputeShader;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_InputUAV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> m_OutputUAV;
